@@ -3,7 +3,7 @@ import numpy as np
 import time
 import os, argparse
 
-def tf2xla(sm_path, nSteps=15):
+def tf2xla(sm_path, batch=1, nSteps=15):
     # default classes=1000, include_top=True (fully-connected at the top -> doesn't have to specify input shape)
     if sm_path == 'vgg16':
       model = tf.keras.applications.VGG16(weights=None, classes=1000, include_top=True)
@@ -14,13 +14,13 @@ def tf2xla(sm_path, nSteps=15):
     elif sm_path == 'inception':
       model = tf.keras.applications.InceptionV3(weights=None)
     
-    shape=[1,224,224,3]
-    picture = np.ones(shape, dtype=np.float32)
+    shape=[256,224,224,3]
+    data = np.ones(shape, dtype=np.float32)
     
     avg_time=0
     for i in range(0, nSteps):
       time1 = time.time()
-      ret = model.predict(picture, batch_size=1)
+      ret = model.predict(data, batch_size=batch)
       time2 = time.time()
       if i < 5:
         continue
@@ -53,4 +53,4 @@ if __name__ == "__main__":
 
     print(time.strftime("[localtime] %Y-%m-%d %H:%M:%S", time.localtime()))
 
-    tf2xla(arg.model) 
+    tf2xla(arg.model, batch=arg.batch) 
