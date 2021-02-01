@@ -47,6 +47,9 @@ if __name__ == "__main__":
     if arg.xla:
       tf.keras.backend.clear_session()
       tf.config.optimizer.set_jit(True) # Enable XLA
+    
+    if arg.device == 'cpu':
+      os.environ['CUDA_VISIBLE_DEVICES'] = ''
 
     print(time.strftime("[localtime] %Y-%m-%d %H:%M:%S", time.localtime()))
 
