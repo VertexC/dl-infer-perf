@@ -53,5 +53,8 @@ if __name__ == "__main__":
 
     if arg.device == 'cpu':
         os.environ['CUDA_VISIBLE_DEVICES'] = ''
+    else:
+        if 'CUDA_VISIBLE_DEVICES' in os.environ:
+            del os.environ['CUDA_VISIBLE_DEVICES']
 
     tf2xla_runner(arg.model, batch_size=arg.batch)
