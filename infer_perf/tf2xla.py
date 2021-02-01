@@ -8,29 +8,23 @@ from util import tf_keras_model
 
 WARM_UP_STEPS = 5
 
+def tf2xla_runner(model_name, batch_size=1, xla=False, device='gpu'):
+    if xla:
+        tf.keras.backend.clear_session()
+        tf.config.optimizer.set_jit(True)    # Enable XLA
 
-def tf2xla_runner(model_name, batch_size=1, nSteps=15):
+    if device == 'cpu':
+        os.environ['CUDA_VISIBLE_DEVICES'] = ''
+    else:
+        if 'CUDA_VISIBLE_DEVICES' in os.environ:
+            del os.environ['CUDA_VISIBLE_DEVICES']
     model = tf_keras_model(model_name)
+    data = np.random.rand(batch_size, 224, 224, 3).astype(np.float32)
+    def runner(data_size):
+        for _ in range(data_size//batch_size):
+            ret = model.predict(data, batch_size=batch_size)
 
-    shape = [256, 224, 224, 3]
-    data = np.ones(shape, dtype=np.float32)
-
-    avg_time = 0
-    for i in range(0, nSteps):
-        tic = time.time()
-        ret = model.predict(data, batch_size=batch_size)
-        toc = time.time()
-        # a warm up process
-        if i < WARM_UP_STEPS:
-            continue
-        avg_time += float(toc - tic)
-        info = '-- %d, iteration time(s) is %.4f' % (i, float(toc - tic))
-        print(info)
-
-    avg_time = avg_time / (nSteps - WARM_UP_STEPS)
-    print("@@ %s, average time(s) is %.4f" % (model, avg_time))
-    print('FINISH')
-
+    return runner
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="benchmark of tf/xla")
@@ -47,14 +41,4 @@ if __name__ == "__main__":
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    if arg.xla:
-        tf.keras.backend.clear_session()
-        tf.config.optimizer.set_jit(True)    # Enable XLA
-
-    if arg.device == 'cpu':
-        os.environ['CUDA_VISIBLE_DEVICES'] = ''
-    else:
-        if 'CUDA_VISIBLE_DEVICES' in os.environ:
-            del os.environ['CUDA_VISIBLE_DEVICES']
-
-    tf2xla_runner(arg.model, batch_size=arg.batch)
+    runner = tf2xla_runner(arg.model, batch_size=arg.batch)
