@@ -1,4 +1,12 @@
 import tensorflow as tf
+import time
+
+
+def simple_bench(runner, data_size=256):
+    tic = time.time()
+    runner(data_size)
+    toc = time.time()
+    return toc - tic
 
 
 def tf_keras_model(model_name):

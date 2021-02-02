@@ -4,7 +4,7 @@ import os, argparse
 import tensorflow as tf
 import numpy as np
 
-from util import tf_keras_model
+import util
 
 WARM_UP_STEPS = 5
 
@@ -21,7 +21,7 @@ def tf2xla_runner(model_name, batch_size=1, xla=False, device='gpu'):
     else:
         if 'CUDA_VISIBLE_DEVICES' in os.environ:
             del os.environ['CUDA_VISIBLE_DEVICES']
-    model = tf_keras_model(model_name)
+    model = util.tf_keras_model(model_name)
     data = np.random.rand(batch_size, 224, 224, 3).astype(np.float32)
 
     def runner(data_size):
@@ -49,8 +49,5 @@ if __name__ == "__main__":
                            batch_size=arg.batch,
                            xla=arg.xla,
                            device=arg.device)
-    tic = time.time()
-    runner(256)
-    toc = time.time()
-    duration = toc - tic
+    duration = util.simple_bench(runner, 256)
     print(duration)
