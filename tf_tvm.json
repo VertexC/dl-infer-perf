@@ -1,0 +1,16 @@
+{
+	"batch_sizes": [1],
+	"models": ["resnet50", "vgg16",  "mobilenet", "inception"],
+	"runners": [
+        {
+            "tf2tvm": {
+                "backend": "cuda"
+            }
+        }, 
+        {
+            "tf2tvm": {
+                "backend": "llvm"
+            }
+        }
+    ]
+}

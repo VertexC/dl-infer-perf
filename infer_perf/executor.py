@@ -61,11 +61,14 @@ def benchmark_executor(config):
     try:
         for task in tasks:
             runner = task.get_runner()
+            if runner is None:
+                continue
             duration = benchmark(task.name, runner)
             metric = "{}: {}".format(str(task), duration)
             print(metric)
             report.append(metric)
     except Exception as e:
+        print(task)
         print(e)
     print(report)
 
