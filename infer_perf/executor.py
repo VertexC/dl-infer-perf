@@ -52,16 +52,17 @@ def benchmark_executor(config):
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
     tasks = generate_tasks(config)
-    import pdb
-    pdb.set_trace()
     benchmark = create_benchmark()
     report = []
-    for task in tasks:
-        runner = task.get_runner()
-        duration = benchmark(task.name, runner)
-        metric = "{}: {}".format(str(task), duration)
-        print(metric)
-        report.append(metric)
+    try:
+        for task in tasks:
+            runner = task.get_runner()
+            duration = benchmark(task.name, runner)
+            metric = "{}: {}".format(str(task), duration)
+            print(metric)
+            report.append(metric)
+    except Exception as e:
+        print(e)
     print(report)
 
 
