@@ -42,12 +42,12 @@ if __name__ == "__main__":
                         default='cpu',
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
-    arg = parser.parse_args()
+    args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    runner = tf2xla_runner(arg.model,
-                           batch_size=arg.batch,
-                           xla=arg.xla,
-                           device=arg.device)
+    runner = tf2xla_runner(args.model,
+                           batch_size=args.batch,
+                           xla=args.xla,
+                           device=args.device)
     duration = util.simple_bench(runner, 256)
     print(duration)

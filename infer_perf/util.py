@@ -29,5 +29,5 @@ def tf_keras_model(model_name):
                                                   include_top=False,
                                                   input_shape=(224, 224, 3))
     else:
-        raise ("Invalid model_name")
+        raise Exception("Invalid model_name")
     return model

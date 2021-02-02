@@ -2,11 +2,13 @@ import time
 import json
 
 from tf2xla import tf2xla_runner
+from tf2tvm import tf2tvm_runner
 
 # TODO: enlarge to proper value
 # set to small for now
-WARM_UP_STEPS = 5
-STEPS = 10
+WARM_UP_ROUNDS = 1
+ROUNDS = 1
+DATA_SIZE = 1
 
 
 # TODO: add single
@@ -20,6 +22,8 @@ class Task:
     def get_runner(self):
         if self.name == 'tf2xla':
             return tf2xla_runner(self.model, self.batch_size, **self.params)
+        if self.name == 'tf2tvm':
+            return tf2tvm_runner(self.model, self.batch_size, **self.params)
 
     def __str__(self):
         return 'name:{} model:{} batch_size:{} params:{}'.format(
@@ -66,19 +70,19 @@ def benchmark_executor(config):
     print(report)
 
 
-def create_benchmark(data_size=256):
-    def benchmark(name, runner, data_size=256):
-        for i in range(WARM_UP_STEPS):
+def create_benchmark(data_size=DATA_SIZE):
+    def benchmark(name, runner, data_size=data_size):
+        for i in range(WARM_UP_ROUNDS):
             runner(data_size)
         avg_time = 0
-        for i in range(STEPS):
+        for i in range(ROUNDS):
             tic = time.time()
             runner(data_size)
             toc = time.time()
             avg_time += (toc - tic)
             print("running {} round {} duration: {:.2f}".format(
                 name, i, toc - tic))
-        avg_time /= STEPS
+        avg_time /= ROUNDS
         return avg_time,
 
     return benchmark
@@ -88,9 +92,29 @@ if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="benchmark task runner")
     parser.add_argument("file", type=str, help="tf model name")
+    parser.add_argument("-w",
+                        "--warmup",
+                        default=1,
+                        type=int,
+                        help="warm up rounds")
+    parser.add_argument("-r",
+                        "--rounds",
+                        default=1,
+                        type=int,
+                        help="rounds to execute runner")
+    parser.add_argument("-s",
+                        "--size",
+                        default=256,
+                        type=int,
+                        help="size of test data size")
 
-    arg = parser.parse_args()
-    with open(arg.file) as f:
+    args = parser.parse_args()
+
+    WARM_UP_ROUNDS = args.warmup
+    ROUNDS = args.rounds
+    DATA_SIZE = args.size
+
+    with open(args.file) as f:
         data = json.load(f)
 
     benchmark_executor(data)
