@@ -1,0 +1,18 @@
+{
+	"batch_sizes": [1],
+	"models": ["vgg16", "resnet50", "mobilenet", "inception"],
+	"runners": [
+        {
+            "tf2xla": {
+                "device": "gpu",
+                "xla": false
+		    }
+        },
+        {
+            "tf2xla": {
+                "device": "gpu",
+                "xla": true
+		    }
+        }
+    ]
+}
