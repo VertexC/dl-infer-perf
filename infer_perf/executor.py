@@ -1,6 +1,8 @@
 import time
 import json
 import os, psutil
+import tracemalloc
+import gc
 
 # TODO: enlarge to proper value
 # set to small for now
@@ -60,7 +62,6 @@ def benchmark_executor(config):
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
     tasks = generate_tasks(config)
-    benchmark = create_benchmark()
     report = []
     try:
         for task in tasks:
@@ -69,32 +70,31 @@ def benchmark_executor(config):
             runner = task.get_runner()
             if runner is None:
                 continue
-            duration = benchmark(task.name, runner)
+            duration = benchmark(task.name, runner, DATA_SIZE)
             metric = "{}: {}".format(str(task), duration)
             print(metric)
             report.append(metric)
+            gc.collect()
     except Exception as e:
         print(task)
         print(e)
     print(report)
+    print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
 
 
-def create_benchmark(data_size=DATA_SIZE):
-    def benchmark(name, runner, data_size=data_size):
-        for i in range(WARM_UP_ROUNDS):
-            runner(data_size)
-        avg_time = 0
-        for i in range(ROUNDS):
-            tic = time.time()
-            runner(data_size)
-            toc = time.time()
-            avg_time += (toc - tic)
-            print("running {} round {} duration: {:.2f}".format(
-                name, i, toc - tic))
-        avg_time /= ROUNDS
-        return avg_time
-
-    return benchmark
+def benchmark(name, runner, data_size):
+    for i in range(WARM_UP_ROUNDS):
+        runner(data_size)
+    avg_time = 0
+    for i in range(ROUNDS):
+        tic = time.time()
+        runner(data_size)
+        toc = time.time()
+        avg_time += (toc - tic)
+        print("running {} round {} duration: {:.2f}".format(
+            name, i, toc - tic))
+    avg_time /= ROUNDS
+    return avg_time
 
 
 if __name__ == "__main__":

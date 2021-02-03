@@ -10,7 +10,6 @@ def simple_bench(runner, data_size=256):
 
 def torch_model(name):
     import torchvision
-    from torchvision import models
     if name == 'vgg16':
         model = torchvision.models.resnet50(pretrained=False, progress=True)
     elif name == 'resnet50':
@@ -33,6 +32,7 @@ def tf_keras_model(name):
                                             classes=1000,
                                             include_top=False,
                                             input_shape=(224, 224, 3))
+        # print("generated", model)
     elif name == 'resnet50':
         model = tf.keras.applications.ResNet50(weights=None,
                                                include_top=False,

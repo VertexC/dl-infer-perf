@@ -12,8 +12,6 @@ import torch
 
 import util
 
-WARM_UP_STEPS = 5
-
 
 def torch2tvm_runner(model_name, batch_size=1, backend='cuda'):
     # TODO: add batch
