@@ -14,6 +14,15 @@ def memory_usage():
     print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
 
 
+def onnx_model(name):
+    import onnx
+    if name == 'resnet50':
+        model = onnx.load("onnx_models/resnet50-caffe2-v1-9.onnx")
+    else:
+        raise Exception("Invalid onnx model name")
+    return model
+
+
 def torch_model(name):
     import torchvision
     if name == 'vgg16':
