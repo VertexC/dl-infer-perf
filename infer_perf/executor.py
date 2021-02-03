@@ -1,8 +1,6 @@
 import time
 import json
-
-from tf2xla import tf2xla_runner
-from tf2tvm import tf2tvm_runner
+import os, psutil
 
 # TODO: enlarge to proper value
 # set to small for now
@@ -21,9 +19,14 @@ class Task:
 
     def get_runner(self):
         if self.name == 'tf2xla':
+            from tf2xla import tf2xla_runner
             return tf2xla_runner(self.model, self.batch_size, **self.params)
-        if self.name == 'tf2tvm':
+        elif self.name == 'tf2tvm':
+            from tf2tvm import tf2tvm_runner
             return tf2tvm_runner(self.model, self.batch_size, **self.params)
+        elif self.name == 'torch2tvm':
+            from torch2tvm import torch2tvm_runner
+            return torch2tvm_runner(self.model, self.batch_size, **self.params)
 
     def __str__(self):
         return 'name:{} model:{} batch_size:{} params:{}'.format(
@@ -52,6 +55,7 @@ def generate_tasks(config):
 
 
 def benchmark_executor(config):
+    process = psutil.Process(os.getpid())
     msg, valid = validate_config(config)
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
@@ -60,6 +64,8 @@ def benchmark_executor(config):
     report = []
     try:
         for task in tasks:
+            print('Used Memory:',
+                  process.memory_info().rss / 1024 / 1024, 'MB')
             runner = task.get_runner()
             if runner is None:
                 continue
@@ -86,7 +92,7 @@ def create_benchmark(data_size=DATA_SIZE):
             print("running {} round {} duration: {:.2f}".format(
                 name, i, toc - tic))
         avg_time /= ROUNDS
-        return avg_time,
+        return avg_time
 
     return benchmark
 

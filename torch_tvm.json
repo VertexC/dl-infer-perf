@@ -3,12 +3,12 @@
 	"models": ["resnet50", "vgg16",  "mobilenet", "inception"],
 	"runners": [
         {
-            "tf2tvm": {
+            "torch2tvm": {
                 "backend": "cuda"
             }
         }, 
         {
-            "tf2tvm": {
+            "torch2tvm": {
                 "backend": "llvm"
             }
         }
