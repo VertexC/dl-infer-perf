@@ -1,4 +1,5 @@
 import time
+import os, psutil
 
 
 def simple_bench(runner, data_size=256):
@@ -6,6 +7,11 @@ def simple_bench(runner, data_size=256):
     runner(data_size)
     toc = time.time()
     return toc - tic
+
+
+def memory_usage():
+    process = psutil.Process(os.getpid())
+    print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
 
 
 def torch_model(name):

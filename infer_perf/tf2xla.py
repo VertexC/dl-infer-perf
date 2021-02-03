@@ -6,8 +6,6 @@ import numpy as np
 
 import util
 
-WARM_UP_STEPS = 5
-
 
 def tf2xla_runner(model_name, batch_size=1, xla=False, device='gpu'):
     if xla:

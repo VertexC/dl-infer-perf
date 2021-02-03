@@ -1,8 +1,7 @@
 import time
 import json
-import os, psutil
-import tracemalloc
 import gc
+import util
 
 # TODO: enlarge to proper value
 # set to small for now
@@ -57,7 +56,7 @@ def generate_tasks(config):
 
 
 def benchmark_executor(config):
-    process = psutil.Process(os.getpid())
+
     msg, valid = validate_config(config)
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
@@ -65,8 +64,7 @@ def benchmark_executor(config):
     report = []
     try:
         for task in tasks:
-            print('Used Memory:',
-                  process.memory_info().rss / 1024 / 1024, 'MB')
+            util.memory_usage()
             runner = task.get_runner()
             if runner is None:
                 continue
@@ -79,7 +77,7 @@ def benchmark_executor(config):
         print(task)
         print(e)
     print(report)
-    print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
+    util.memory_usage()
 
 
 def benchmark(name, runner, data_size):
