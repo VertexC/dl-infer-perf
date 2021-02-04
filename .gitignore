@@ -1,7 +1,14 @@
 __pycache__
 
+# log file
+log.md
+*.log
+
 # task files
 *.json
 
 # onnx model files
 *.onnx
+
+# result file
+*.csv
