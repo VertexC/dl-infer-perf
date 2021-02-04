@@ -27,16 +27,22 @@ class Benchmark:
 
 
 class Task:
-    def __init__(self, name, model, batch_size, params):
-        self.name = name
+    def __init__(self, fe, optimizer, model, batch_size, device):
+        self.fe = fe
+        self.optimizer = optimizer
         self.model = model
         self.batch_size = batch_size
-        self.params = params
+        self.device = device
+        self.params = {}
 
     def get_runner(self):
-        if self.name == 'tf2xla':
-            from tf2xla import tf2xla_runner
-            return tf2xla_runner(self.model, self.batch_size, **self.params)
+        if self.optimizer == 'xla':
+            from xla import xla_runner
+            return xla_runner(self.fe,
+                              self.model,
+                              self.batch_size,
+                              self.device,
+                              xla=True)
         elif self.name == 'tf2tvm':
             from tf2tvm import tf2tvm_runner
             return tf2tvm_runner(self.model, self.batch_size, **self.params)
@@ -49,10 +55,11 @@ class Task:
 
     def get_info(self):
         return {
-            "name": self.name,
+            "optimizer": self.optimizer,
+            "fe": self.fe,
             "model": self.model,
             "batch_size": self.batch_size,
-            "params": self.params,
+            "device": self.device,
         }
 
     def __str__(self):
@@ -61,32 +68,37 @@ class Task:
 
 
 def validate_config(config):
-    if 'models' not in config or len(config['models']) == 0:
-        return "Missing models", False
-    if 'batch_sizes' not in config or len(config['batch_sizes']) == 0:
+    if 'fe' not in config or len(config['fe']) == 0:
+        return 'Missing frontend', False
+    if 'optimizer' not in config:
+        config['optimizer'] = ''
+    if 'model' not in config or len(config['model']) == 0:
+        return 'Missing models', False
+    if 'batch_size' not in config or len(config['batch_size']) == 0:
         return "Missg batch_sizes", False
-    if 'runners' not in config or len(config['runners']) == 0:
-        return "Missing runners", False
-    return "", True
+    return '', True
 
 
 def generate_tasks(config):
     tasks = []
-    for model in config['models']:
-        for batch_size in config['batch_sizes']:
-            for runner in config['runners']:
-                for name, params in runner.items():
-                    tasks.append(Task(name, model, batch_size, params))
-                    break
+    for model in config['model']:
+        for batch_size in config['batch_size']:
+            for optimizer in config['optimizer']:
+                for device in config['device']:
+                    for fe in config['fe']:
+                        tasks.append(
+                            Task(fe, optimizer, model, batch_size, device))
     return tasks
 
 
 def execute_worker(resultq, benchmark, task):
     runner = task.get_runner()
-    if runner is None:
-        return
-    duration = benchmark.execute(runner)
     task_info = task.get_info()
+    if runner is None:
+        print("Get invalid task: {}".format(task_info))
+        return
+    print("Star to run stask: {}".format(task_info))
+    duration = benchmark.execute(runner)
     task_info['time'] = duration
     resultq.put(task_info)
 

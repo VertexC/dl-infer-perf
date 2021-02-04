@@ -1,4 +1,7 @@
 __pycache__
 
+# task files
+*.json
+
 # onnx model files
 *.onnx

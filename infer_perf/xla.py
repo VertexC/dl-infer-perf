@@ -7,7 +7,9 @@ import numpy as np
 import util
 
 
-def tf2xla_runner(model_name, batch_size=1, device='gpu', xla=False):
+def xla_runner(fe, model_name, batch_size, device, xla):
+    if fe != 'tf':
+        return None
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)    # Enable XLA
@@ -43,9 +45,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    runner = tf2xla_runner(args.model,
-                           batch_size=args.batch,
-                           xla=args.xla,
-                           device=args.device)
+    runner = xla_runner(args.model,
+                        batch_size=args.batch,
+                        xla=args.xla,
+                        device=args.device)
     duration = util.simple_bench(runner, 256)
     print(duration)
