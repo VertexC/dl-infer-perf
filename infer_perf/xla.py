@@ -31,6 +31,10 @@ def xla_runner(fe, model_name, batch_size, device, xla):
     return runner
 
 
+def xla(model_name, batch_size=1, device='gpu', xla=True):
+    xla_runner('tf', model_name, batch_size, device, xla)
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="benchmark of tf/xla")
     parser.add_argument("model", help="tf model name")
@@ -45,9 +49,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    runner = xla_runner(args.model,
-                        batch_size=args.batch,
-                        xla=args.xla,
-                        device=args.device)
+    runner = xla(args.model,
+                 batch_size=args.batch,
+                 xla=args.xla,
+                 device=args.device)
     duration = util.simple_bench(runner, 256)
     print(duration)
