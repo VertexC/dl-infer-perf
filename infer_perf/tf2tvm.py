@@ -13,12 +13,12 @@ import util
 
 
 def tf2tvm_runner(model_name, batch_size=1, backend='cuda'):
+    print(model_name, batch_size, backend)
     # tvm cuda will have issue with mobilenet
     if model_name == 'mobilenet' and backend == 'cuda':
         return None
-    data = np.random.rand(batch_size, 3, 224, 224)
-    model = util.tf_keras_model(model_name)
-
+    model, shape = util.tf_keras_model(model_name)
+    data = np.random.rand(batch_size, *shape)
     # input_name has to match model's input name
     # use  model.input_names[0] instead of input_1 to compile different models inside same round
     # TODO: why would same models with cuda/lvvm can compile in same process? (different backends models doens't affect each other?)

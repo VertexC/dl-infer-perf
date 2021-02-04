@@ -37,21 +37,18 @@ class Task:
 
     def get_runner(self):
         if self.optimizer == 'xla':
-            from xla import xla_runner
+            from to_xla import xla_runner
             return xla_runner(self.fe,
                               self.model,
                               self.batch_size,
                               self.device,
                               xla=True)
-        elif self.name == 'tf2tvm':
-            from tf2tvm import tf2tvm_runner
-            return tf2tvm_runner(self.model, self.batch_size, **self.params)
-        elif self.name == 'torch2tvm':
-            from torch2tvm import torch2tvm_runner
-            return torch2tvm_runner(self.model, self.batch_size, **self.params)
-        elif self.name == 'onnx2tvm':
-            from onnx2tvm import onnx2tvm_runner
-            return onnx2tvm_runner(self.model, self.batch_size, **self.params)
+        elif self.optimizer == 'tvm':
+            from to_tvm import tvm_runner
+            return tvm_runner(self.fe, self.model, self.batch_size,
+                              self.device)
+        else:
+            return None
 
     def get_info(self):
         return {
@@ -100,6 +97,7 @@ def execute_worker(resultq, benchmark, task):
     print("Star to run stask: {}".format(task_info))
     duration = benchmark.execute(runner)
     task_info['time'] = duration
+    print(task_info)
     resultq.put(task_info)
 
 
@@ -120,7 +118,6 @@ def execute_manager(config, file):
     resultq = mp.Queue()
     benchmark = Benchmark()
     for task in tasks:
-        util.memory_usage()
         try:
             p = mp.Process(target=execute_worker,
                            args=(resultq, benchmark, task))
@@ -128,10 +125,7 @@ def execute_manager(config, file):
             p.join()
         except Exception as e:
             print("Got exception when run {}:{}".format(task, e))
-        print(resultq)
-
     to_report(resultq, file)
-    util.memory_usage()
 
 
 if __name__ == "__main__":

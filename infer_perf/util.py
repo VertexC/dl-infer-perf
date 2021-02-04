@@ -51,7 +51,7 @@ def torch_model(name):
 def tf_keras_model(name):
     import tensorflow as tf
     # set include_top to False and input_shape explicitly as mobilenet has different default input shape
-    shape = [224, 224, 3]
+    shape = [3, 224, 224]
     if name == 'vgg16':
         model = tf.keras.applications.VGG16(weights=None,
                                             classes=1000,
@@ -70,7 +70,7 @@ def tf_keras_model(name):
         model = tf.keras.applications.InceptionV3(weights=None,
                                                   include_top=False,
                                                   input_shape=(299, 299, 3))
-        shape = [299, 299, 3]
+        shape = [3, 299, 299]
     else:
         raise Exception("Invalid tf model name")
     return model, shape

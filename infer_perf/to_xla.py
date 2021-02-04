@@ -12,7 +12,7 @@ def xla_runner(fe, model_name, batch_size, device, xla):
         return None
     if xla:
         tf.keras.backend.clear_session()
-        tf.config.optimizer.set_jit(True)    # Enable XLA
+        tf.config.optimizer.set_jit(True)
     else:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(False)
