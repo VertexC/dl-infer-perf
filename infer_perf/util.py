@@ -16,14 +16,16 @@ def memory_usage():
 
 def onnx_model(name):
     import onnx
+    shape = [3, 224, 224]
     if name == 'resnet50':
         model = onnx.load("onnx_models/resnet50-caffe2-v1-9.onnx")
     else:
         raise Exception("Invalid onnx model name")
-    return model
+    return model, shape
 
 
 def torch_model(name):
+    shape = [3, 224, 224]
     import torchvision
     if name == 'vgg16':
         model = torchvision.models.resnet50(pretrained=False, progress=True)
@@ -34,14 +36,16 @@ def torch_model(name):
     elif name == 'inception':
         model = torchvision.models.inception_v3(pretrained=False,
                                                 progress=True)
+        shape = [3, 299, 299]
     else:
         raise Exception("Invalid pytorch model name")
-    return model
+    return model, shape
 
 
 def tf_keras_model(name):
     import tensorflow as tf
     # set include_top to False and input_shape explicitly as mobilenet has different default input shape
+    shape = [224, 224, 3]
     if name == 'vgg16':
         model = tf.keras.applications.VGG16(weights=None,
                                             classes=1000,
@@ -59,7 +63,8 @@ def tf_keras_model(name):
     elif name == 'inception':
         model = tf.keras.applications.InceptionV3(weights=None,
                                                   include_top=False,
-                                                  input_shape=(224, 224, 3))
+                                                  input_shape=(299, 299, 3))
+        shape = [299, 299, 3]
     else:
         raise Exception("Invalid tf model name")
-    return model
+    return mode, shape
