@@ -18,7 +18,13 @@ def onnx_model(name):
     import onnx
     shape = [3, 224, 224]
     if name == 'resnet50':
-        model = onnx.load("onnx_models/resnet50-caffe2-v1-9.onnx")
+        model = onnx.load("onnx_models/resnet50.onnx")
+    elif name == 'mobilenet':
+        model = onnx.load("onnx_models/mobilenet.onnx")
+    elif name == 'vgg16':
+        model = onnx.load("onnx_models/vgg16.onnx")
+    elif name == 'inception':
+        model = onnx.load("onnx_models/inception.onnx")
     else:
         raise Exception("Invalid onnx model name")
     return model, shape
@@ -67,4 +73,4 @@ def tf_keras_model(name):
         shape = [299, 299, 3]
     else:
         raise Exception("Invalid tf model name")
-    return mode, shape
+    return model, shape

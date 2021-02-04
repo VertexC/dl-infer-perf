@@ -3,6 +3,8 @@ import json
 import gc
 import util
 import multiprocessing as mp
+import pandas as pd
+import collections
 
 
 class Benchmark:
@@ -24,7 +26,6 @@ class Benchmark:
         return avg_time
 
 
-# TODO: add single
 class Task:
     def __init__(self, name, model, batch_size, params):
         self.name = name
@@ -42,6 +43,17 @@ class Task:
         elif self.name == 'torch2tvm':
             from torch2tvm import torch2tvm_runner
             return torch2tvm_runner(self.model, self.batch_size, **self.params)
+        elif self.name == 'onnx2tvm':
+            from onnx2tvm import onnx2tvm_runner
+            return onnx2tvm_runner(self.model, self.batch_size, **self.params)
+
+    def get_info(self):
+        return {
+            "name": self.name,
+            "model": self.model,
+            "batch_size": self.batch_size,
+            "params": self.params,
+        }
 
     def __str__(self):
         return 'name:{} model:{} batch_size:{} params:{}'.format(
@@ -73,44 +85,48 @@ def execute_worker(resultq, benchmark, task):
     runner = task.get_runner()
     if runner is None:
         return
-    metric = benchmark.execute(runner)
-    print(metric)
-    resultq.put(metric)
+    duration = benchmark.execute(runner)
+    task_info = task.get_info()
+    task_info['time'] = duration
+    resultq.put(task_info)
 
 
-def to_report(resultq):
-    pass
+def to_report(resultq, file):
+    result = collections.defaultdict(list)
+    while not resultq.empty():
+        for k, v in resultq.get().items():
+            result[k].append(v)
+    pd.DataFrame.from_dict(data=result).to_csv(file, index=False, header=True)
 
 
-def execute_manager(config):
-    import pdb
-    pdb.set_trace()
+def execute_manager(config, file):
     msg, valid = validate_config(config)
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
     tasks = generate_tasks(config)
 
     resultq = mp.Queue()
-
     benchmark = Benchmark()
-    try:
-        for task in tasks:
-            util.memory_usage()
+    for task in tasks:
+        util.memory_usage()
+        try:
             p = mp.Process(target=execute_worker,
                            args=(resultq, benchmark, task))
             p.start()
             p.join()
-            print(resultq)
-    except Exception as e:
-        print("Got exception when run {}:{}".format(task, e))
-    to_report(resultq)
+        except Exception as e:
+            print("Got exception when run {}:{}".format(task, e))
+        print(resultq)
+
+    to_report(resultq, file)
     util.memory_usage()
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="benchmark task runner")
-    parser.add_argument("file", type=str, help="tf model name")
+    parser.add_argument("task_file", type=str, help="json file of tasks")
+    parser.add_argument("report_file", type=str, help="output file of results")
     parser.add_argument("-w",
                         "--warmup",
                         default=1,
@@ -129,7 +145,7 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    with open(args.file) as f:
+    with open(args.task_file) as f:
         config = json.load(f)
 
     try:
@@ -137,4 +153,4 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    execute_manager(config)
+    execute_manager(config, args.report_file)

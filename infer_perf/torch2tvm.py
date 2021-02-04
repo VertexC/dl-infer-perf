@@ -16,9 +16,9 @@ import util
 def torch2tvm_runner(model_name, batch_size=1, backend='cuda'):
     # TODO: add batch
     input_name = "input0"
-    shape = [1, 3, 224, 224]
-    data = torch.randn(shape, dtype=torch.float32)
-    model = util.torch_model(model_name)
+    model, shape = util.torch_model(model_name)
+    model.eval()
+    data = torch.randn([batch_size] + shape, dtype=torch.float32)
 
     shape_list = [(input_name, data.shape)]
     scripted_model = torch.jit.trace(model, data).eval()

@@ -12,11 +12,9 @@ import util
 
 
 def onnx2tvm_runner(model_name, batch_size=1, backend='cuda'):
-    # TODO: add batch
+    model, shape = util.onnx_model(model_name)
 
-    data = np.random.rand(batch_size, 3, 224, 224).astype(np.float32)
-    model = util.onnx_model(model_name)
-
+    data = np.random.rand(batch_size, *shape).astype(np.float32)
     input_name = model.graph.input[0].name
 
     shape_dict = {input_name: data.shape}

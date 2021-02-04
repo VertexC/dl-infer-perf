@@ -7,7 +7,7 @@ import numpy as np
 import util
 
 
-def tf2xla_runner(model_name, batch_size=1, xla=False, device='gpu'):
+def tf2xla_runner(model_name, batch_size=1, device='gpu', xla=False):
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)    # Enable XLA
@@ -19,8 +19,8 @@ def tf2xla_runner(model_name, batch_size=1, xla=False, device='gpu'):
     else:
         if 'CUDA_VISIBLE_DEVICES' in os.environ:
             del os.environ['CUDA_VISIBLE_DEVICES']
-    model = util.tf_keras_model(model_name)
-    data = np.random.rand(batch_size, 224, 224, 3).astype(np.float32)
+    model, shape = util.tf_keras_model(model_name)
+    data = np.random.rand(batch_size, *shape).astype(np.float32)
 
     def runner(data_size):
         for _ in range(data_size // batch_size):
