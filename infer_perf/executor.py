@@ -47,6 +47,10 @@ class Task:
             from to_tvm import tvm_runner
             return tvm_runner(self.fe, self.model, self.batch_size,
                               self.device)
+        elif self.optimizer == None:
+            if self.fe == "pytorch":
+                from to_torch import torch_runner
+                return torch_runner(self.model, self.batch_size, self.device)
         else:
             return None
 
