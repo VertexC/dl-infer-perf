@@ -51,6 +51,13 @@ class Task:
             if self.fe == "pytorch":
                 from to_torch import torch_runner
                 return torch_runner(self.model, self.batch_size, self.device)
+            elif self.fe == "tf":
+                from to_xla import xla_runner
+                return xla_runner(self.fe,
+                                  self.model,
+                                  self.batch_size,
+                                  self.device,
+                                  xla=False)
         else:
             return None
 
