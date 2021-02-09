@@ -18,20 +18,14 @@ def memory_usage():
 def onnx_model(name):
     import onnx
     shape = [3, 224, 224]
-    if name == 'resnet50':
-        model = onnx.load("onnx_models/resnet50.onnx")
-    elif name == 'mobilenet':
-        model = onnx.load("onnx_models/mobilenet.onnx")
-    elif name == 'vgg16':
-        model = onnx.load("onnx_models/vgg16.onnx")
-    elif name == 'inception':
-        model = onnx.load("onnx_models/inception.onnx")
-    else:
-        raise Exception("Invalid onnx model name")
+    model_path = onnx_model_path(name)
+    model = onnx.load(model_path)
     return model, shape
 
 
 def onnx_model_path(name):
+    if name not in ['resnet50', 'mobilenet', 'vgg16', 'inception']:
+        raise Exception("Invalid onnx model name")
     return 'onnx_models/{}.onnx'.format(name)
 
 
