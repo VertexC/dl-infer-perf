@@ -12,3 +12,6 @@ log.md
 
 # result file
 *.csv
+
+# tf/trt saved model
+*saved_model*
