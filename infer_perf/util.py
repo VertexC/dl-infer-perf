@@ -1,5 +1,5 @@
 import time
-import os, psutil
+import os
 
 
 def simple_bench(runner, data_size=256):
@@ -10,6 +10,7 @@ def simple_bench(runner, data_size=256):
 
 
 def memory_usage():
+    import psutil
     process = psutil.Process(os.getpid())
     print('Used Memory:', process.memory_info().rss / 1024 / 1024, 'MB')
 
@@ -28,6 +29,10 @@ def onnx_model(name):
     else:
         raise Exception("Invalid onnx model name")
     return model, shape
+
+
+def onnx_model_path(name):
+    return 'onnx_models/{}.onnx'.format(name)
 
 
 def torch_model(name):
@@ -51,7 +56,7 @@ def torch_model(name):
 def tf_keras_model(name):
     import tensorflow as tf
     # set include_top to False and input_shape explicitly as mobilenet has different default input shape
-    shape = [3, 224, 224]
+    shape = [224, 224, 3]
     if name == 'vgg16':
         model = tf.keras.applications.VGG16(weights=None,
                                             classes=1000,
@@ -70,7 +75,7 @@ def tf_keras_model(name):
         model = tf.keras.applications.InceptionV3(weights=None,
                                                   include_top=False,
                                                   input_shape=(299, 299, 3))
-        shape = [3, 299, 299]
+        shape = [299, 299, 3]
     else:
         raise Exception("Invalid tf model name")
     return model, shape
