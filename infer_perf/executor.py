@@ -48,7 +48,7 @@ class Task:
             return tvm_runner(self.fe, self.model, self.batch_size,
                               self.device)
         elif self.optimizer == 'trt':
-            from to_trt import tf2trt_runner
+            from to_trt import trt_runner
             return trt_runner(self.fe, self.model, self.batch_size,
                               self.device)
         elif self.optimizer == None:

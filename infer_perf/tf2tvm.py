@@ -18,6 +18,8 @@ def tf2tvm_runner(model_name, batch_size=1, backend='cuda'):
     if model_name == 'mobilenet' and backend == 'cuda':
         return None
     model, shape = util.tf_keras_model(model_name)
+    # TODO: why tvm needs reversed shape
+    shape = shape[::-1]
     data = np.random.rand(batch_size, *shape)
     # input_name has to match model's input name
     # use  model.input_names[0] instead of input_1 to compile different models inside same round
