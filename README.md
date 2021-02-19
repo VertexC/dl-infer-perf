@@ -2,6 +2,8 @@
 A perf analysis of deep learning inference performance over pytorch/tensorflow and TensorRT/XLA/TVM.
 
 ## Usage
+
+### Run per optimizer&frontend
 [TODO: prepare proper environment]
 ```bash
 usage: executor.py [-h] [-w WARMUP] [-r ROUNDS] [-s SIZE]
@@ -21,7 +23,8 @@ optional arguments:
                         rounds to execute runner
   -s SIZE, --size SIZE  size of test data size
 ```
-### example
+
+#### example
 `python infer_perf/executor.py torch2tvm.json result.csv`
 
 torch2tvm.json
@@ -42,5 +45,14 @@ tvm,pytorch,resnet50,1,gpu,1.535079002380371
 tvm,pytorch,mobilenet,1,gpu,1.775536060333252
 tvm,pytorch,inception,1,gpu,3.066736936569214
 ```
+
+### Run per optimizer
+```bash
+bash jobs.sh <optimizer> <exp_id>
+```
+
+## Report
+See (doc)[!doc/] for reports.
+
 ## Code Format
 yapf infer_perf/*.py -i --style yapf.style 
