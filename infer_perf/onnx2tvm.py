@@ -14,10 +14,10 @@ import util
 def onnx2tvm_runner(model_name, batch_size=1, backend='cuda'):
     model, shape = util.onnx_model(model_name)
 
-    data = np.random.rand(batch_size, *shape).astype(np.float32)
+    data = np.random.rand(batch_size, *shape)
     input_name = model.graph.input[0].name
 
-    shape_dict = {input_name: data.shape}
+    shape_dict = {input_name: tuple([batch_size, *shape])}
     mod, params = relay.frontend.from_onnx(model, shape_dict)
 
     # TODO: how opt_level affects performance
@@ -41,7 +41,8 @@ def onnx2tvm_runner(model_name, batch_size=1, backend='cuda'):
         module = graph_runtime.GraphModule(lib["default"](ctx))
         module.set_input(input_name, data)
 
-    data = tvm.nd.array(data)
+    dtype = "float32"
+    data = tvm.nd.array(data.astype(dtype))
 
     def runner(data_size):
         for _ in range(data_size // batch_size):
@@ -53,7 +54,7 @@ def onnx2tvm_runner(model_name, batch_size=1, backend='cuda'):
 
 if __name__ == "__main__":
     import argparse
-    parser = argparse.ArgumentParser(description="benchmark of pytorch/xla")
+    parser = argparse.ArgumentParser(description="benchmark of onnx/tvm")
     parser.add_argument("model", help="onnx model name")
     parser.add_argument("--backend",
                         choices=['cuda', 'llvm'],

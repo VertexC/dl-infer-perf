@@ -13,7 +13,6 @@ import util
 
 
 def tf2tvm_runner(model_name, batch_size=1, backend='cuda'):
-    print(model_name, batch_size, backend)
     # tvm cuda will have issue with mobilenet
     if model_name == 'mobilenet' and backend == 'cuda':
         return None

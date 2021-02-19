@@ -10,8 +10,8 @@ import collections
 class Benchmark:
     def __init__(self, data_size=256, warmup=1, rounds=1):
         self.data_size = data_size
-        self.warmup = 1
-        self.rounds = 1
+        self.warmup = warmup
+        self.rounds = rounds
 
     def execute(self, runner):
         for i in range(self.warmup):
@@ -51,7 +51,7 @@ class Task:
             from to_trt import trt_runner
             return trt_runner(self.fe, self.model, self.batch_size,
                               self.device)
-        elif self.optimizer == None:
+        elif self.optimizer is None:
             if self.fe == "pytorch":
                 from to_torch import torch_runner
                 return torch_runner(self.model, self.batch_size, self.device)
@@ -82,8 +82,8 @@ class Task:
 def validate_config(config):
     if 'fe' not in config or len(config['fe']) == 0:
         return 'Missing frontend', False
-    if 'optimizer' not in config:
-        config['optimizer'] = ''
+    if 'optimizer' not in config or len(config['optimizer']) == 0:
+        config['optimizer'] = [None]
     if 'model' not in config or len(config['model']) == 0:
         return 'Missing models', False
     if 'batch_size' not in config or len(config['batch_size']) == 0:
@@ -150,12 +150,12 @@ if __name__ == "__main__":
     parser.add_argument("report_file", type=str, help="output file of results")
     parser.add_argument("-w",
                         "--warmup",
-                        default=1,
+                        default=5,
                         type=int,
                         help="warm up rounds")
     parser.add_argument("-r",
                         "--rounds",
-                        default=1,
+                        default=30,
                         type=int,
                         help="rounds to execute runner")
     parser.add_argument("-s",
