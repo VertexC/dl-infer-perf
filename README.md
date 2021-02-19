@@ -4,7 +4,6 @@ A perf analysis of deep learning inference performance over pytorch/tensorflow a
 ## Usage
 
 ### Run per optimizer&frontend
-[TODO: prepare proper environment]
 ```bash
 usage: executor.py [-h] [-w WARMUP] [-r ROUNDS] [-s SIZE]
                    task_file report_file
