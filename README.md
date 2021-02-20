@@ -3,6 +3,26 @@ A perf analysis of deep learning inference performance over pytorch/tensorflow a
 
 ## Usage
 
+### Environments
+#### TVM
+docker: nvidia/cuda:11.1.1-devel-ubuntu18.0
+
+compile tvm with llvm
+
+virtualenv:
+  - [tvm-torch-env](doc/tvm-torch-env-req.txt)
+  - [tvm-tf-env](doc/tvm-tf-env-req.txt)
+  - [tvm-onnx-env](doc/tvm-onnx-env-req.txt)
+
+#### XLA
+docker: nvcr.io/nvidia/tensorflow:20.07-tf1-py3
+
+#### TensorRT
+docker: nvcr.io/nvidia/tensorrt
+
+virtualenv:
+  - [trt-tf-env](doc/trt-tf-env-req.txt)
+
 ### Run per optimizer&frontend
 ```bash
 usage: executor.py [-h] [-w WARMUP] [-r ROUNDS] [-s SIZE]

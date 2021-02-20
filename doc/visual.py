@@ -90,7 +90,7 @@ def visualize(directory, batch_size):
                 optimizer = ''
             data[(optimizer, row['fe'])] = row['time']
         print(model, batch_size, '\n', data)
-        grouped_barplot(data, '{}-{}.png'.format(model, batch_size))
+        grouped_barplot(data, os.path.join(directory, '{}-{}.png'.format(model, batch_size)))
 
 
 if __name__ == "__main__":
