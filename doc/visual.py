@@ -5,19 +5,15 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-def grouped_barplot(data, filename):
+def grouped_barplot(data, title, filename):
     fig = plt.figure()
     labels = set()
     groups = set()
     for (label, group), _ in data.items():
         labels.add(label)
         groups.add(group)
-    print(labels)
-    print(groups)
     groups = [g for g in groups]
     labels = [l for l in labels]
-    print(labels)
-    print(groups)
     values = []
     for label in labels:
         vals = []
@@ -60,10 +56,11 @@ def grouped_barplot(data, filename):
                 yval = '{:.2f}'.format(yval)
             plt.text(bar.get_x() + 0.03, pos, yval)
     # Add xticks on the middle of the group bars
-    plt.xlabel('group', fontweight='bold')
+    plt.xlabel('fe', fontweight='bold')
     plt.xticks([r + 1.5 * barWidth for r in rs[0]], groups)
 
     # Create legend & Show graphic
+    plt.title(title)
     plt.legend()
     plt.show()
 
@@ -90,7 +87,9 @@ def visualize(directory, batch_size):
                 optimizer = ''
             data[(optimizer, row['fe'])] = row['time']
         print(model, batch_size, '\n', data)
-        grouped_barplot(data, os.path.join(directory, '{}-{}.png'.format(model, batch_size)))
+        title = '{}-{}'.format(model, batch_size)
+        grouped_barplot(data, title,
+                        os.path.join(directory, '{}.png'.format(title)))
 
 
 if __name__ == "__main__":

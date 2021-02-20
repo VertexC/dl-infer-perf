@@ -1,28 +1,27 @@
 # dl-infer-perf
 A perf analysis of deep learning inference performance over pytorch/tensorflow and TensorRT/XLA/TVM.
 
-## Usage
-
-### Environments
-#### TVM
+## Environments
+### TVM
 docker: nvidia/cuda:11.1.1-devel-ubuntu18.0
 
-compile tvm with llvm
+compile tvm with llvm (clang+llvm-11.0.1-x86_64-linux-gnu-ubuntu-16.04)
 
-virtualenv:
+**virtualenv**:
   - [tvm-torch-env](doc/tvm-torch-env-req.txt)
   - [tvm-tf-env](doc/tvm-tf-env-req.txt)
   - [tvm-onnx-env](doc/tvm-onnx-env-req.txt)
 
-#### XLA
-docker: nvcr.io/nvidia/tensorflow:20.07-tf1-py3
+### XLA
+docker: nvcr.io/nvidia/tensorflow:20.07-tf2-py3
 
-#### TensorRT
+### TensorRT
 docker: nvcr.io/nvidia/tensorrt
 
-virtualenv:
+**virtualenv**:
   - [trt-tf-env](doc/trt-tf-env-req.txt)
 
+## Usage
 ### Run per optimizer&frontend
 ```bash
 usage: executor.py [-h] [-w WARMUP] [-r ROUNDS] [-s SIZE]
@@ -71,7 +70,7 @@ bash jobs.sh <optimizer> <exp_id>
 ```
 
 ## Report
-See (doc)[!doc/] for reports.
+See [report](doc/exp/report.md) for detailed report.
 
 ## Code Format
 yapf infer_perf/*.py -i --style yapf.style 

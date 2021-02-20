@@ -48,7 +48,3 @@ then
 
     python3 infer_perf/executor.py onnx2trt.json ${JOB_DIR}/onnx2trt.csv
 fi
-
-# xla
-
-# trt
