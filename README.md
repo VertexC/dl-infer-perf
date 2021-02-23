@@ -70,7 +70,7 @@ bash jobs.sh <optimizer> <exp_id>
 ```
 
 ## Report
-See [report](doc/exp/report.md) for detailed report.
+See [report](doc/exp/report.md) for detailed benchmark result and environment.
 
 ## Code Format
 yapf infer_perf/*.py -i --style yapf.style 
