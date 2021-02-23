@@ -12,8 +12,8 @@ def grouped_barplot(data, title, filename):
     for (label, group), _ in data.items():
         labels.add(label)
         groups.add(group)
-    groups = [g for g in groups]
-    labels = [l for l in labels]
+    groups = list(sorted([g for g in groups]))
+    labels = list(sorted([l for l in labels]))
     values = []
     for label in labels:
         vals = []
