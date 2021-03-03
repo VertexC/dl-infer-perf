@@ -33,11 +33,12 @@ def torch_model(name):
     shape = [3, 224, 224]
     import torchvision
     if name == 'vgg16':
-        model = torchvision.models.resnet50(pretrained=False, progress=True)
+        model = torchvision.models.vgg16(pretrained=False, progress=True)
     elif name == 'resnet50':
         model = torchvision.models.resnet50(pretrained=False, progress=True)
     elif name == 'mobilenet':
-        model = torchvision.models.vgg16(pretrained=False, progress=True)
+        model = torchvision.models.mobilenet_v2(pretrained=False,
+                                                progress=True)
     elif name == 'inception':
         model = torchvision.models.inception_v3(pretrained=False,
                                                 progress=True)
@@ -56,7 +57,6 @@ def tf_keras_model(name):
                                             classes=1000,
                                             include_top=False,
                                             input_shape=(224, 224, 3))
-        # print("generated", model)
     elif name == 'resnet50':
         model = tf.keras.applications.ResNet50(weights=None,
                                                include_top=False,

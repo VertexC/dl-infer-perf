@@ -42,7 +42,16 @@ class Task:
                               self.model,
                               self.batch_size,
                               self.device,
-                              xla=True)
+                              xla=True,
+                              eager=False)
+        elif self.optimizer == 'eager':
+            from to_xla import xla_runner
+            return xla_runner(self.fe,
+                              self.model,
+                              self.batch_size,
+                              self.device,
+                              xla=False,
+                              eager=True)
         elif self.optimizer == 'tvm':
             from to_tvm import tvm_runner
             return tvm_runner(self.fe, self.model, self.batch_size,
@@ -61,7 +70,8 @@ class Task:
                                   self.model,
                                   self.batch_size,
                                   self.device,
-                                  xla=False)
+                                  xla=False,
+                                  eager=False)
         else:
             return None
 
@@ -96,6 +106,8 @@ def generate_tasks(config):
     for model in config['model']:
         for batch_size in config['batch_size']:
             for optimizer in config['optimizer']:
+                if optimizer == '':
+                    optimizer = None
                 for device in config['device']:
                     for fe in config['fe']:
                         tasks.append(
@@ -121,7 +133,7 @@ def to_report(resultq, file):
     while not resultq.empty():
         for k, v in resultq.get().items():
             result[k].append(v)
-    pd.DataFrame.from_dict(data=result).to_csv(file, index=False, header=True)
+    pd.DataFrame.from_dict(data=result).to_csv(file, index=False, header=True, mode='a')
 
 
 def execute_manager(config, file):

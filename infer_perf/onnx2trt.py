@@ -5,17 +5,42 @@ import pycuda.driver as cuda
 
 import util
 
-TRT_LOGGER = trt.Logger(trt.Logger.WARNING)
+TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE)
+"""
+A few notes regards to the build engine
+
+"""
+# def build_engine(model_path):
+#     with trt.Builder(TRT_LOGGER) as builder, \
+#         builder.create_network() as network, \
+#         trt.OnnxParser(network, TRT_LOGGER) as parser:
+#         builder.max_workspace_size = 1 << 20
+#         builder.max_batch_size = 1
+#         with open(model_path, "rb") as f:
+#             parser.parse(f.read())
+#         engine = builder.build_cuda_engine(network)
+#         return engine
 
 
 def build_engine(model_path):
+    EXPLICIT_BATCH = 1 << (int)(
+        trt.NetworkDefinitionCreationFlag.EXPLICIT_BATCH)
     with trt.Builder(TRT_LOGGER) as builder, \
-        builder.create_network() as network, \
+        builder.create_network(EXPLICIT_BATCH) as network, \
         trt.OnnxParser(network, TRT_LOGGER) as parser:
+
+        with open(model_path, 'rb') as model:
+            if not parser.parse(model.read()):
+                for error in range(parser.num_errors):
+                    print(parser.get_error(error))
+
         builder.max_workspace_size = 1 << 20
         builder.max_batch_size = 1
-        with open(model_path, "rb") as f:
-            parser.parse(f.read())
+
+        # # add below two linse to avoid `[TensorRT] ERROR: Network must have at least one output`
+        # last_layer = network.get_layer(network.num_layears - 1)
+        # network.mark_output(last_layer.get_output(0))
+
         engine = builder.build_cuda_engine(network)
         return engine
 
