@@ -40,7 +40,7 @@ def grouped_barplot(data, title, filename):
     # Make the plot
     for r, vals, label, color in zip(rs, values, labels, color):
         if label == '':
-            label = 'None'
+            label = 'baseline'
         bars = plt.bar(r,
                        vals,
                        color=color,
@@ -82,6 +82,7 @@ def visualize(directory, batch_size):
         # data: (optimizer, fe): time
         data = {}
         for _, row in modelf.iterrows():
+            row['time'] =  row['time']
             optimizer = row['optimizer']
             if pd.isnull(optimizer):
                 optimizer = ''
