@@ -4,9 +4,27 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
+MODEL_NUM = 4
 
-def grouped_barplot(data, title, filename):
-    fig = plt.figure()
+
+def do_subplot(model_num, dir_num):
+    axs = []
+
+    def _do_subplot(dir_i, model_i):
+        if dir_i == 0:
+            ax = plt.subplot(model_num, dir_num, model_i * dir_num + dir_i + 1)
+            axs.append(ax)
+        else:
+            plt.subplot(model_num,
+                        dir_num,
+                        model_i * dir_num + dir_i + 1,
+                        sharey=axs[model_i])
+
+    return _do_subplot
+
+
+def grouped_barplot(plotter, dir_i, model_i, data, title):
+    plotter(dir_i, model_i)
     labels = set()
     groups = set()
     for (label, group), _ in data.items():
@@ -62,12 +80,9 @@ def grouped_barplot(data, title, filename):
     # Create legend & Show graphic
     plt.title(title)
     plt.legend()
-    plt.show()
-
-    plt.savefig(filename)
 
 
-def visualize(directory, batch_size):
+def visualize(plotter, dir_i, directory, batch_size):
     dfs = []
     for filename in os.listdir(directory):
         if filename.endswith('.csv'):
@@ -76,27 +91,41 @@ def visualize(directory, batch_size):
     frame = pd.concat(dfs, axis=0, ignore_index=True)
 
     batchf = frame.loc[frame['batch_size'] == batch_size]
-
-    for model in set(batchf['model']):
+    models = sorted(list(set(batchf['model'])))
+    for model_i, model in enumerate(models):
         modelf = batchf.loc[batchf['model'] == model]
         # data: (optimizer, fe): time
         data = {}
         for _, row in modelf.iterrows():
+            row['time'] = row['time']
             optimizer = row['optimizer']
             if pd.isnull(optimizer):
                 optimizer = ''
             data[(optimizer, row['fe'])] = row['time']
         print(model, batch_size, '\n', data)
         title = '{}-{}'.format(model, batch_size)
-        grouped_barplot(data, title,
-                        os.path.join(directory, '{}.png'.format(title)))
+        grouped_barplot(plotter, dir_i, model_i, data, title)
+
+
+def visualize_group(dirs, batch_size):
+    fig = plt.figure(figsize=(25, 25))
+    fig.tight_layout()
+    plotter = do_subplot(MODEL_NUM, len(dirs))
+    for i, d in enumerate(dirs):
+        visualize(plotter, i, d, batch_size)
+    plt.show()
+    plt.savefig('test-1.png')
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="benchmark visualizer")
-    parser.add_argument("dir", help="dir of benchmark result")
+    parser.add_argument('dirs',
+                        metavar='N',
+                        type=str,
+                        nargs='+',
+                        help='dirs of benchmark result')
+    parser.add_argument('out', type=str, help='output result image')
     parser.add_argument("--batch", type=int, default=64)
-
     args = parser.parse_args()
-    visualize(args.dir, args.batch)
+    visualize_group(args.dirs, args.batch)
