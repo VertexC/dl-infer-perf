@@ -23,7 +23,8 @@ class Benchmark:
             toc = time.time()
             avg_time += (toc - tic)
         avg_time /= self.rounds
-        return avg_time
+        throughput = self.data_size / avg_time
+        return throughput
 
 
 class Task:
@@ -133,7 +134,15 @@ def to_report(resultq, file):
     while not resultq.empty():
         for k, v in resultq.get().items():
             result[k].append(v)
-    pd.DataFrame.from_dict(data=result).to_csv(file, index=False, header=True, mode='a')
+    if not os.path.isfile(file):
+        pd.DataFrame.from_dict(data=result).to_csv(file,
+                                                   index=False,
+                                                   header=True)
+    else:
+        pd.DataFrame.from_dict(data=result).to_csv(file,
+                                                   index=False,
+                                                   header=False,
+                                                   mode='a')
 
 
 def execute_manager(config, file):
