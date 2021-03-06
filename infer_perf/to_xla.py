@@ -6,14 +6,14 @@ import numpy as np
 
 import util
 
+np.random.seed(0)
+tf.random.set_seed(0)
 
-def xla_runner(fe, model_name, batch_size, device, xla, eager):
-    assert not (xla and eager)
-
+def xla_runner(fe, model_name, batch_size, device, xla, test=False):
     if fe != 'tf':
         return None
-    if not eager:
-        tf.compat.v1.disable_eager_execution()
+    # if not eager:
+    #     tf.compat.v1.disable_eager_execution()
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
@@ -29,26 +29,41 @@ def xla_runner(fe, model_name, batch_size, device, xla, eager):
             del os.environ['CUDA_VISIBLE_DEVICES']
     model, shape = util.tf_keras_model(model_name)
     # data = np.random.rand(batch_size, *shape).astype(np.float32)
-    if xla:
-        grap_model = tf.function(lambda x: model(x))
-    else:
-        grap_model = model.predict
+    
 
     class runner_wrapper:
-        def __init__(self, batch_size=1):
+        def __init__(self, graph_model, need_eval, batch_size=1):
             self.batch_size = batch_size
             self.data = np.random.rand(batch_size, *shape).astype(np.float32)
+            self.need_eval = need_eval
+            self.graph_model = graph_model
 
         def __call__(self, data_size):
-            for _ in range(data_size // self.batch_size):
-                ret = grap_model(self.data)
+            if self.need_eval:
+                self.session_runner(data_size)
+            else:
+                for _ in range(data_size // self.batch_size):
+                    ret = self.graph_model(self.data)
+        
+        # explicitly eval is only needed when eager_execution is off
+        def session_runner(self, data_size):
+            with tf.compat.v1.Session() as sess:
+                sess.run(tf.compat.v1.global_variables_initializer())
+                ret = self.graph_model(self.data)
+                ret_np = ret.eval()
 
-    runner = runner_wrapper(batch_size=256)
+    if xla:
+        graf_model = tf.function(lambda x: model(x))
+    else:
+        graf_model = model.predict
+
+
+    runner = runner_wrapper(graf_model, False, batch_size=batch_size)
     return runner
 
 
-def xla(model_name, batch_size=1, device='gpu', xla=True, eager=False):
-    return xla_runner('tf', model_name, batch_size, device, xla, eager)
+def xla(model_name, batch_size=1, device='gpu', xla=True, test=False):
+    return xla_runner('tf', model_name, batch_size, device, xla, test=test)
 
 
 if __name__ == "__main__":
@@ -57,15 +72,13 @@ if __name__ == "__main__":
     parser.add_argument("--xla",
                         action='store_true',
                         help='Flag to turn on xla')
-    parser.add_argument("--eager",
-                        action='store_true',
-                        help='Flat to trun on eager execution')
     parser.add_argument("--device",
                         choices=['gpu', 'cpu'],
                         default='gpu',
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
     parser.add_argument("--size", type=int, default=256, help='data size')
+    parser.add_argument("--test", action='store_true', help='Store temporary result')
 
     args = parser.parse_args()
 
@@ -73,7 +86,7 @@ if __name__ == "__main__":
     runner = xla(args.model,
                  batch_size=args.batch,
                  xla=args.xla,
-                 eager=args.eager,
-                 device=args.device)
-    duration = util.simple_bench(runner, data_size=args.size)
-    print(duration)
+                 device=args.device,
+                 test=args.test)
+    throughput = util.simple_bench(runner, data_size=args.size, warmup=3, rounds=30, verbose=True)
+    print(throughput)

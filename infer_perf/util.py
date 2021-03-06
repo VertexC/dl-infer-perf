@@ -2,11 +2,19 @@ import time
 import os
 
 
-def simple_bench(runner, data_size=256):
-    tic = time.time()
-    runner(data_size)
-    toc = time.time()
-    return toc - tic
+def simple_bench(runner, data_size=256, warmup=0, rounds=2, verbose=False):
+    for i in range(warmup):
+        runner(data_size)
+    avg_time = 0
+    for i in range(rounds):
+        tic = time.time()
+        runner(data_size)
+        toc = time.time()
+        avg_time += (toc - tic)
+        if verbose:
+            print("round {}: time {:.2f}s".format(i, toc - tic))
+    avg_time /= rounds
+    return data_size / avg_time
 
 
 def memory_usage():
