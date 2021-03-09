@@ -16,7 +16,7 @@ compile tvm with llvm (clang+llvm-11.0.1-x86_64-linux-gnu-ubuntu-16.04)
 docker: nvcr.io/nvidia/tensorflow:20.07-tf2-py3
 
 ### TensorRT
-docker: nvcr.io/nvidia/tensorrt
+docker: nvcr.io/nvidia/tensorrt:19.09-py3 
 
 **virtualenv**:
   - [trt-tf-env](doc/trt-tf-env-req.txt)
