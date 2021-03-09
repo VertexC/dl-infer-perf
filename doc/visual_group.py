@@ -82,7 +82,7 @@ def grouped_barplot(plotter, dir_i, model_i, data, title):
     plt.legend()
 
 
-def visualize(plotter, dir_i, directory, batch_size):
+def visualize(fes, models, optimizers, plotter, dir_i, directory, batch_size):
     dfs = []
     for filename in os.listdir(directory):
         if filename.endswith('.csv'):
@@ -91,30 +91,47 @@ def visualize(plotter, dir_i, directory, batch_size):
     frame = pd.concat(dfs, axis=0, ignore_index=True)
 
     batchf = frame.loc[frame['batch_size'] == batch_size]
-    models = sorted(list(set(batchf['model'])))
     for model_i, model in enumerate(models):
+        # data: {(fe, optimizer): metric}
+        # FIXME: what is there is no model
         modelf = batchf.loc[batchf['model'] == model]
-        # data: (optimizer, fe): time
         data = {}
         for _, row in modelf.iterrows():
-            row['time'] = row['time']
             optimizer = row['optimizer']
-            if pd.isnull(optimizer):
-                optimizer = ''
-            data[(optimizer, row['fe'])] = row['time']
-        print(model, batch_size, '\n', data)
+            data[(optimizer, row['fe'])] = row['metric']
+        # place holders
+        for optimizer in optimizers:
+            for fe in fes:
+                comb = (optimizer, fe)
+                if comb not in data:
+                    data[comb] = 0
         title = '{}-{}'.format(model, batch_size)
         grouped_barplot(plotter, dir_i, model_i, data, title)
 
 
-def visualize_group(dirs, batch_size):
+def scan_parameters(dirs):
+    dfs = []
+    for d in dirs:
+        for filename in os.listdir(d):
+            if filename.endswith('.csv'):
+                df = pd.read_csv(os.path.join(d, filename), index_col=None)
+                dfs.append(df)
+    frame = pd.concat(dfs, axis=0, ignore_index=True)
+    models = sorted(list(set(frame['model'])))
+    optimizers = sorted(list(set(frame['optimizer'])))
+    fes = sorted(list(set(frame['fe'])))
+    return fes, models, optimizers
+
+
+def visualize_group(dirs, out, batch_size):
+    fes, models, optimizers = scan_parameters(dirs)
     fig = plt.figure(figsize=(25, 25))
     fig.tight_layout()
-    plotter = do_subplot(MODEL_NUM, len(dirs))
+    plotter = do_subplot(len(models), len(dirs))
     for i, d in enumerate(dirs):
-        visualize(plotter, i, d, batch_size)
+        visualize(fes, models, optimizers, plotter, i, d, batch_size)
     plt.show()
-    plt.savefig('test-1.png')
+    plt.savefig(out)
 
 
 if __name__ == "__main__":
@@ -128,4 +145,4 @@ if __name__ == "__main__":
     parser.add_argument('out', type=str, help='output result image')
     parser.add_argument("--batch", type=int, default=64)
     args = parser.parse_args()
-    visualize_group(args.dirs, args.batch)
+    visualize_group(args.dirs, args.out, args.batch)

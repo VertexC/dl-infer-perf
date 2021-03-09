@@ -26,7 +26,7 @@ class Benchmark:
         avg_time /= self.rounds
         throughput = self.data_size / avg_time
         return throughput
-    
+
     def __str__(self):
         return 'data_size:{} warmup:{} rounds:{}'.format(
             self.data_size, self.warmup, self.rounds)
@@ -182,11 +182,12 @@ if __name__ == "__main__":
                         default=256,
                         type=int,
                         help="size of test data size")
-    parser.add_argument("-b"
-                        "--batch",
-                        default=-1,
-                        type=int,
-                        help="specific batch size to run (-1 for without specification)")
+    parser.add_argument(
+        "-b"
+        "--batch",
+        default=-1,
+        type=int,
+        help="specific batch size to run (-1 for without specification)")
 
     args = parser.parse_args()
 
@@ -198,4 +199,5 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    execute_manager(config, args.report_file, args.warmup, args.rounds, args.size, args.batch)
+    execute_manager(config, args.report_file, args.warmup, args.rounds,
+                    args.size, args.batch)
