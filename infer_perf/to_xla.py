@@ -6,14 +6,13 @@ import numpy as np
 
 import util
 
-np.random.seed(0)
-tf.random.set_seed(0)
+print("Num GPUs Available: ",
+      len(tf.config.experimental.list_physical_devices('GPU')))
+
 
 def xla_runner(fe, model_name, batch_size, device, xla, test=False):
     if fe != 'tf':
         return None
-    # if not eager:
-    #     tf.compat.v1.disable_eager_execution()
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
@@ -27,9 +26,8 @@ def xla_runner(fe, model_name, batch_size, device, xla, test=False):
     else:
         if 'CUDA_VISIBLE_DEVICES' in os.environ:
             del os.environ['CUDA_VISIBLE_DEVICES']
+
     model, shape = util.tf_keras_model(model_name)
-    # data = np.random.rand(batch_size, *shape).astype(np.float32)
-    
 
     class runner_wrapper:
         def __init__(self, graph_model, need_eval, batch_size=1):
@@ -44,7 +42,7 @@ def xla_runner(fe, model_name, batch_size, device, xla, test=False):
             else:
                 for _ in range(data_size // self.batch_size):
                     ret = self.graph_model(self.data)
-        
+
         # explicitly eval is only needed when eager_execution is off
         def session_runner(self, data_size):
             with tf.compat.v1.Session() as sess:
@@ -52,11 +50,7 @@ def xla_runner(fe, model_name, batch_size, device, xla, test=False):
                 ret = self.graph_model(self.data)
                 ret_np = ret.eval()
 
-    if xla:
-        graf_model = tf.function(lambda x: model(x))
-    else:
-        graf_model = model.predict
-
+    graf_model = tf.function(lambda x: model(x))
 
     runner = runner_wrapper(graf_model, False, batch_size=batch_size)
     return runner
@@ -78,7 +72,9 @@ if __name__ == "__main__":
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
     parser.add_argument("--size", type=int, default=256, help='data size')
-    parser.add_argument("--test", action='store_true', help='Store temporary result')
+    parser.add_argument("--test",
+                        action='store_true',
+                        help='Store temporary result')
 
     args = parser.parse_args()
 
@@ -88,5 +84,9 @@ if __name__ == "__main__":
                  xla=args.xla,
                  device=args.device,
                  test=args.test)
-    throughput = util.simple_bench(runner, data_size=args.size, warmup=3, rounds=30, verbose=True)
+    throughput = util.simple_bench(runner,
+                                   data_size=args.size,
+                                   warmup=1,
+                                   rounds=5,
+                                   verbose=True)
     print(throughput)
