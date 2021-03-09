@@ -2,9 +2,15 @@ import time
 import os
 
 
-def simple_bench(runner, data_size=256, warmup=0, rounds=2, verbose=False):
+def simple_bench(runner, data_size=256, warmup=0, rounds=1, verbose=False):
+    avg_time = 0
     for i in range(warmup):
+        tic = time.time()
         runner(data_size)
+        toc = time.time()
+        avg_time += (toc - tic)
+        if verbose:
+            print("warmup round {}: time {:.2f}s".format(i, toc - tic))
     avg_time = 0
     for i in range(rounds):
         tic = time.time()
