@@ -1,4 +1,5 @@
 import time
+import os
 import json
 import gc
 import util
@@ -25,6 +26,10 @@ class Benchmark:
         avg_time /= self.rounds
         throughput = self.data_size / avg_time
         return throughput
+    
+    def __str__(self):
+        return 'data_size:{} warmup:{} rounds:{}'.format(
+            self.data_size, self.warmup, self.rounds)
 
 
 class Task:
@@ -43,16 +48,7 @@ class Task:
                               self.model,
                               self.batch_size,
                               self.device,
-                              xla=True,
-                              eager=False)
-        elif self.optimizer == 'eager':
-            from to_xla import xla_runner
-            return xla_runner(self.fe,
-                              self.model,
-                              self.batch_size,
-                              self.device,
-                              xla=False,
-                              eager=True)
+                              xla=True)
         elif self.optimizer == 'tvm':
             from to_tvm import tvm_runner
             return tvm_runner(self.fe, self.model, self.batch_size,
@@ -61,7 +57,7 @@ class Task:
             from to_trt import trt_runner
             return trt_runner(self.fe, self.model, self.batch_size,
                               self.device)
-        elif self.optimizer is None:
+        elif self.optimizer == 'baseline':
             if self.fe == "pytorch":
                 from to_torch import torch_runner
                 return torch_runner(self.model, self.batch_size, self.device)
@@ -71,8 +67,7 @@ class Task:
                                   self.model,
                                   self.batch_size,
                                   self.device,
-                                  xla=False,
-                                  eager=False)
+                                  xla=False)
         else:
             return None
 
@@ -94,7 +89,7 @@ def validate_config(config):
     if 'fe' not in config or len(config['fe']) == 0:
         return 'Missing frontend', False
     if 'optimizer' not in config or len(config['optimizer']) == 0:
-        config['optimizer'] = [None]
+        return 'Missing optimizer', False
     if 'model' not in config or len(config['model']) == 0:
         return 'Missing models', False
     if 'batch_size' not in config or len(config['batch_size']) == 0:
@@ -102,13 +97,14 @@ def validate_config(config):
     return '', True
 
 
-def generate_tasks(config):
+def generate_tasks(config, batch=-1):
     tasks = []
     for model in config['model']:
         for batch_size in config['batch_size']:
+            if batch != -1:
+                if batch_size != batch:
+                    continue
             for optimizer in config['optimizer']:
-                if optimizer == '':
-                    optimizer = None
                 for device in config['device']:
                     for fe in config['fe']:
                         tasks.append(
@@ -123,8 +119,8 @@ def execute_worker(resultq, benchmark, task):
         print("Get invalid task: {}".format(task_info))
         return
     print("Star to run stask: {}".format(task_info))
-    duration = benchmark.execute(runner)
-    task_info['time'] = duration
+    metric = benchmark.execute(runner)
+    task_info['metric'] = metric
     print(task_info)
     resultq.put(task_info)
 
@@ -145,14 +141,16 @@ def to_report(resultq, file):
                                                    mode='a')
 
 
-def execute_manager(config, file):
+def execute_manager(config, file, warmup, rounds, data_size, batch):
     msg, valid = validate_config(config)
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
-    tasks = generate_tasks(config)
+    tasks = generate_tasks(config, batch)
+    print("Get Tasks:\n {}".format(tasks))
 
     resultq = mp.Queue()
-    benchmark = Benchmark()
+    benchmark = Benchmark(data_size=data_size, warmup=warmup, rounds=rounds)
+    print("Create benchmark: {}".format(benchmark))
     for task in tasks:
         try:
             p = mp.Process(target=execute_worker,
@@ -184,6 +182,11 @@ if __name__ == "__main__":
                         default=256,
                         type=int,
                         help="size of test data size")
+    parser.add_argument("-b"
+                        "--batch",
+                        default=-1,
+                        type=int,
+                        help="specific batch size to run (-1 for without specification)")
 
     args = parser.parse_args()
 
@@ -195,4 +198,4 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    execute_manager(config, args.report_file)
+    execute_manager(config, args.report_file, args.warmup, args.rounds, args.size, args.batch)
