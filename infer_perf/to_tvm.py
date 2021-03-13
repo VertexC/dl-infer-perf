@@ -2,7 +2,7 @@ def tvm_runner(fe, model_name, batch_size, device):
     backend = 'cuda'
     if device == 'cpu':
         backend = 'llvm'
-    if fe == 'pytorch':
+    if fe == 'torch':
         from torch2tvm import torch2tvm_runner
         return torch2tvm_runner(model_name,
                                 batch_size=batch_size,

@@ -58,7 +58,7 @@ class Task:
             return trt_runner(self.fe, self.model, self.batch_size,
                               self.device)
         elif self.optimizer == 'baseline':
-            if self.fe == "pytorch":
+            if self.fe == "torch":
                 from to_torch import torch_runner
                 return torch_runner(self.model, self.batch_size, self.device)
             elif self.fe == "tf":
@@ -81,8 +81,7 @@ class Task:
         }
 
     def __str__(self):
-        return 'name:{} model:{} batch_size:{} params:{}'.format(
-            self.name, self.model, self.batch_size, self.params)
+        return str(list(self.get_info().values()))
 
 
 def validate_config(config):
@@ -146,7 +145,7 @@ def execute_manager(config, file, warmup, rounds, data_size, batch):
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
     tasks = generate_tasks(config, batch)
-    print("Get Tasks:\n {}".format(tasks))
+    print("Get Tasks:\n {}".format("\n".join([str(task) for task in tasks])))
 
     resultq = mp.Queue()
     benchmark = Benchmark(data_size=data_size, warmup=warmup, rounds=rounds)
@@ -182,12 +181,11 @@ if __name__ == "__main__":
                         default=256,
                         type=int,
                         help="size of test data size")
-    parser.add_argument(
-        "-b"
-        "--batch",
-        default=-1,
-        type=int,
-        help="specific batch size to run (-1 for without specification)")
+    parser.add_argument("-b",
+                        "--batch",
+                        default=-1,
+                        type=int,
+                        help="specific batch size to run (-1 for without specification)")
 
     args = parser.parse_args()
 

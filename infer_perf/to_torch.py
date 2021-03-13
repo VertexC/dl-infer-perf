@@ -6,7 +6,6 @@ import torch
 
 import util
 
-
 def torch_runner(model_name, batch_size=1, device='gpu'):
     cuda_flag = False
     torch_device = None
