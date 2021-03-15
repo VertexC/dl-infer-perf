@@ -15,17 +15,12 @@ class Benchmark:
         self.rounds = rounds
 
     def execute(self, runner):
-        for i in range(self.warmup):
-            runner(self.data_size)
-        avg_time = 0
-        for i in range(self.rounds):
-            tic = time.time()
-            runner(self.data_size)
-            toc = time.time()
-            avg_time += (toc - tic)
-        avg_time /= self.rounds
-        throughput = self.data_size / avg_time
-        return throughput
+        metric = util.simple_bench(runner,
+                                   data_size=self.data_size,
+                                   warmup=self.warmup,
+                                   rounds=self.rounds,
+                                   verbose=True)
+        return metric
 
     def __str__(self):
         return 'data_size:{} warmup:{} rounds:{}'.format(
@@ -181,11 +176,12 @@ if __name__ == "__main__":
                         default=256,
                         type=int,
                         help="size of test data size")
-    parser.add_argument("-b",
-                        "--batch",
-                        default=-1,
-                        type=int,
-                        help="specific batch size to run (-1 for without specification)")
+    parser.add_argument(
+        "-b",
+        "--batch",
+        default=-1,
+        type=int,
+        help="specific batch size to run (-1 for without specification)")
 
     args = parser.parse_args()
 

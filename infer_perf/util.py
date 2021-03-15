@@ -10,7 +10,8 @@ def simple_bench(runner, data_size=256, warmup=0, rounds=1, verbose=False):
         toc = time.time()
         avg_time += (toc - tic)
         if verbose:
-            print("warmup round {}: time {:.2f}s".format(i, toc - tic))
+            throughput = data_size / (toc - tic)
+            print("warmup throughput {}: {} imgs/s".format(i, throughput))
     avg_time = 0
     for i in range(rounds):
         tic = time.time()
@@ -18,7 +19,8 @@ def simple_bench(runner, data_size=256, warmup=0, rounds=1, verbose=False):
         toc = time.time()
         avg_time += (toc - tic)
         if verbose:
-            print("round {}: time {:.2f}s".format(i, toc - tic))
+            throughput = data_size / (toc - tic)
+            print("round {}: throughput {} imgs/s".format(i, throughput))
     avg_time /= rounds
     return data_size / avg_time
 
