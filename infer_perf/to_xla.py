@@ -6,8 +6,7 @@ import numpy as np
 
 import util
 
-print("Num GPUs Available: ",
-      len(tf.config.experimental.list_physical_devices('GPU')))
+print("GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
 
 
 def xla_runner(fe, model_name, batch_size, device, xla, test=False):
@@ -47,8 +46,9 @@ def xla_runner(fe, model_name, batch_size, device, xla, test=False):
         def session_runner(self, data_size):
             with tf.compat.v1.Session() as sess:
                 sess.run(tf.compat.v1.global_variables_initializer())
-                ret = self.graph_model(self.data)
-                ret_np = ret.eval()
+                for _ in range(data_size // self.batch_size):
+                    ret = self.graph_model(self.data)
+                    ret_np = ret.eval()
 
     graf_model = tf.function(lambda x: model(x))
 

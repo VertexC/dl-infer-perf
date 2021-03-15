@@ -1,28 +1,29 @@
 import time
 import os
+import numpy as np
 
 
 def simple_bench(runner, data_size=256, warmup=0, rounds=1, verbose=False):
-    avg_time = 0
     for i in range(warmup):
         tic = time.time()
         runner(data_size)
         toc = time.time()
-        avg_time += (toc - tic)
+        throughput = data_size / (toc - tic)
         if verbose:
-            throughput = data_size / (toc - tic)
-            print("warmup throughput {}: {} imgs/s".format(i, throughput))
-    avg_time = 0
+            print('warmup {}: throughput {} imgs/s'.format(i, throughput))
+    throughputs = []
     for i in range(rounds):
         tic = time.time()
         runner(data_size)
         toc = time.time()
-        avg_time += (toc - tic)
+        throughput = data_size / (toc - tic)
+        throughputs.append(throughput)
         if verbose:
-            throughput = data_size / (toc - tic)
-            print("round {}: throughput {} imgs/s".format(i, throughput))
-    avg_time /= rounds
-    return data_size / avg_time
+            print('round {}: throughput {} imgs/s'.format(i, throughput))
+    avg = np.mean(throughputs)
+    std = np.std(throughputs)
+    print('throughput: {}+/-{}'.format(avg, std))
+    return avg
 
 
 def memory_usage():
