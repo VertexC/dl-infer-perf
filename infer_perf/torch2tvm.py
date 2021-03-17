@@ -35,7 +35,6 @@ def torch2tvm_runner(model_name, batch_size=1, backend='cuda'):
 
         ctx = tvm.cpu()
         module = graph_runtime.GraphModule(lib["default"](ctx))
-        module.set_input(input_name, data)
     else:
         target = tvm.target.cuda()
         with tvm.transform.PassContext(opt_level=opt_level):
@@ -43,14 +42,15 @@ def torch2tvm_runner(model_name, batch_size=1, backend='cuda'):
 
         ctx = tvm.gpu()
         module = graph_runtime.GraphModule(lib["default"](ctx))
-        module.set_input(input_name, data)
 
     data = tvm.nd.array(data)
 
     def runner(data_size):
         for _ in range(data_size // batch_size):
+            data = torch.randn([batch_size] + shape, dtype=torch.float32)
             module.set_input(input_name, data)
             module.run()
+            tvm_output = module.get_output(0)
 
     return runner
 

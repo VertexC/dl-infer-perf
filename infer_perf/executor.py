@@ -7,6 +7,7 @@ import multiprocessing as mp
 import pandas as pd
 import collections
 
+TAG = '[BenchmarkExectutor]'
 
 class Benchmark:
     def __init__(self, data_size=256, warmup=1, rounds=1):
@@ -114,12 +115,14 @@ def generate_tasks(config, batch=-1):
 
 
 def execute_worker(resultq, benchmark, task):
-    runner = task.get_runner()
     task_info = task.get_info()
+    print(TAG, 'Star process stask: {}'.format(task_info))
+    print(TAG, 'Try to get runner...')
+    runner = task.get_runner()
     if runner is None:
-        print("Get invalid task: {}".format(task_info))
+        print('Get invalid task: {}'.format(task_info))
         return
-    print("Star to run stask: {}".format(task_info))
+    print(TAG, 'Start to run benchmark')
     metric = benchmark.execute(runner)
     task_info['metric'] = metric
     print(task_info)
