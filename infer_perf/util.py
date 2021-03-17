@@ -72,21 +72,20 @@ def tf_keras_model(name):
     if name == 'vgg16':
         model = tf.keras.applications.VGG16(weights=None,
                                             classes=1000,
-                                            include_top=False,
+                                            include_top=True,
                                             input_shape=(224, 224, 3))
     elif name == 'resnet50':
         model = tf.keras.applications.ResNet50(weights=None,
-                                               include_top=False,
+                                               include_top=True,
                                                input_shape=(224, 224, 3))
     elif name == 'mobilenet':
         model = tf.keras.applications.MobileNetV2(weights=None,
-                                                  include_top=False,
+                                                  include_top=True,
                                                   input_shape=(224, 224, 3))
     elif name == 'inception':
         model = tf.keras.applications.InceptionV3(weights=None,
-                                                  include_top=False,
-                                                  input_shape=(299, 299, 3))
-        shape = [299, 299, 3]
+                                                  include_top=True,
+                                                  input_shape=(224, 224, 3))
     else:
         raise Exception("Invalid tf model name")
     return model, shape
