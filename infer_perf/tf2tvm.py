@@ -51,7 +51,7 @@ def tf2tvm_runner(model_name, batch_size=1, backend='cuda'):
     def runner(data_size):
         for _ in range(data_size // batch_size):
             module.set_input(input_name, data)
-            module.run()
+            tvm_output = module.get_output(0)
 
     return runner
 
