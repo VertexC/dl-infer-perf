@@ -17,6 +17,7 @@ import os
 import numpy as np
 import timeit
 import util
+from datetime import datetime
 
 import tensorflow as tf
 import horovod.tensorflow as hvd
@@ -158,22 +159,25 @@ if __name__ == "__main__":
     if args.test:
         # Set up logging for tensorboard
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        logdir = 'logs/func/%s' % stamp
+        logdir = 'logs/func/{}-{}-{}'.format(stamp, args.model, 'train')
         writer = tf.summary.create_file_writer(logdir)
         tf.summary.trace_on(graph=True, profiler=True)
 
+    
     runner = train_runner(args.model,
-                          batch_size=args.batch,
-                          xla=args.xla,
-                          device=args.device)
+        batch_size=args.batch,
+        xla=args.xla,
+        device=args.device)
 
     throughput = util.simple_bench(runner,
-                                   data_size=args.size,
-                                   warmup=1,
-                                   rounds=5,
-                                   verbose=True)
+        data_size=args.size,
+        warmup=1,
+        rounds=5,
+        verbose=True)
+
     if args.test:
         with writer.as_default():
-            tf.summary.trace_export(name="my_func_trace",
-                                    step=0,
-                                    profiler_outdir=logdir)
+            tf.summary.trace_export(
+                name='trace_of_{}_train'.format(args.model),
+                step=0,
+                profiler_outdir=logdir)
