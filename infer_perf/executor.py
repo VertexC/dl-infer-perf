@@ -9,6 +9,7 @@ import collections
 
 TAG = '[BenchmarkExectutor]'
 
+
 class Benchmark:
     def __init__(self, data_size=256, warmup=1, rounds=1):
         self.data_size = data_size
@@ -41,14 +42,17 @@ class Task:
         if self.optimizer == 'xla':
             if self.fe == 'tf-train':
                 from tf_train import train_runner
-                return train_runner(self.model, self.batch_size, self.device, xla=True)
+                return train_runner(self.model,
+                                    self.batch_size,
+                                    self.device,
+                                    xla=True)
             else:
                 from to_xla import xla_runner
                 return xla_runner(self.fe,
-                                self.model,
-                                self.batch_size,
-                                self.device,
-                                xla=True)
+                                  self.model,
+                                  self.batch_size,
+                                  self.device,
+                                  xla=True)
         elif self.optimizer == 'tvm':
             from to_tvm import tvm_runner
             return tvm_runner(self.fe, self.model, self.batch_size,
@@ -70,7 +74,10 @@ class Task:
                                   xla=False)
             elif self.fe == 'tf-train':
                 from tf_train import train_runner
-                return train_runner(self.model, self.batch_size, self.device, xla=False)
+                return train_runner(self.model,
+                                    self.batch_size,
+                                    self.device,
+                                    xla=False)
         else:
             return None
 

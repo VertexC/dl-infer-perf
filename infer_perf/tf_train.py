@@ -23,27 +23,39 @@ import horovod.tensorflow as hvd
 from tensorflow.keras import applications
 from tensorflow.keras.mixed_precision import experimental as mixed_precision
 # Benchmark settings
-parser = argparse.ArgumentParser(description='TensorFlow Synthetic Benchmark',
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--fp16-allreduce', action='store_true', default=False,
+parser = argparse.ArgumentParser(
+    description='TensorFlow Synthetic Benchmark',
+    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+parser.add_argument('--fp16-allreduce',
+                    action='store_true',
+                    default=False,
                     help='use fp16 compression during allreduce')
 
-parser.add_argument('--model', type=str, default='ResNet50',
+parser.add_argument('--model',
+                    type=str,
+                    default='ResNet50',
                     help='model to benchmark')
-parser.add_argument('--batch-size', type=int, default=128,
+parser.add_argument('--batch-size',
+                    type=int,
+                    default=128,
                     help='input batch size')
 
-parser.add_argument('--num-warmup-batches', type=int, default=10,
-                    help='number of warm-up batches that don\'t count towards benchmark')
-parser.add_argument('--num-batches-per-iter', type=int, default=10,
+parser.add_argument(
+    '--num-warmup-batches',
+    type=int,
+    default=10,
+    help='number of warm-up batches that don\'t count towards benchmark')
+parser.add_argument('--num-batches-per-iter',
+                    type=int,
+                    default=10,
                     help='number of batches per benchmark iteration')
-parser.add_argument('--num-iters', type=int, default=100,
+parser.add_argument('--num-iters',
+                    type=int,
+                    default=100,
                     help='number of benchmark iterations')
 
-def train_runner(model_name,
-                 batch_size,
-                 device='gpu',
-                 xla=True):
+
+def train_runner(model_name, batch_size, device='gpu', xla=True):
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
@@ -58,7 +70,8 @@ def train_runner(model_name,
         #for gpu in gpus:
         #    tf.config.experimental.set_memory_growth(gpu, True)
         if gpus:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()], 'GPU')
+            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()],
+                                                       'GPU')
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     policy = mixed_precision.Policy('mixed_float16')
@@ -69,8 +82,10 @@ def train_runner(model_name,
     opt = tf.optimizers.SGD(0.01)
 
     data = tf.random.uniform([batch_size, 224, 224, 3])
-    target = tf.random.uniform([batch_size, 1], minval=0, maxval=999, dtype=tf.int64)
-
+    target = tf.random.uniform([batch_size, 1],
+                               minval=0,
+                               maxval=999,
+                               dtype=tf.int64)
 
     @tf.function
     def benchmark_step(first_batch=False):
@@ -99,7 +114,6 @@ def train_runner(model_name,
             return
         print(s, end='\n' if nl else '')
 
-
     log('Model: %s' % model_name)
     log('Batch size: %d' % batch_size)
     log('Number of %ss: %d' % (device, hvd.size()))
@@ -119,6 +133,7 @@ def train_runner(model_name,
                     self.step(first_batch=False)
 
     return runner_wrapper(benchmark_step, batch_size)
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="benchmark of tf/xla")
@@ -140,19 +155,25 @@ if __name__ == "__main__":
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    # Set up logging for tensorboard
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    logdir = 'logs/func/%s' % stamp
-    writer = tf.summary.create_file_writer(logdir)
+    if args.test:
+        # Set up logging for tensorboard
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        logdir = 'logs/func/%s' % stamp
+        writer = tf.summary.create_file_writer(logdir)
+        tf.summary.trace_on(graph=True, profiler=True)
 
-   
     runner = train_runner(args.model,
-                 batch_size=args.batch,
-                 xla=args.xla,
-                 device=args.device)
+                          batch_size=args.batch,
+                          xla=args.xla,
+                          device=args.device)
 
     throughput = util.simple_bench(runner,
                                    data_size=args.size,
                                    warmup=1,
                                    rounds=5,
                                    verbose=True)
+    if args.test:
+        with writer.as_default():
+            tf.summary.trace_export(name="my_func_trace",
+                                    step=0,
+                                    profiler_outdir=logdir)

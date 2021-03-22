@@ -12,6 +12,7 @@ gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
+
 def xla_runner(fe, model_name, batch_size, device, xla, test=False):
     if fe != 'tf':
         return None
