@@ -65,6 +65,53 @@ def torch_model(name):
     return model, shape
 
 
+def tf_vgg_small(input_shape=(224, 224, 3), classes=1000):
+    import tensorflow as tf
+    from tensorflow.keras import layers
+    from tensorflow.python.keras.engine import training
+    img_input = layers.Input(shape=input_shape)
+    x = layers.Conv2D(64, (3, 3),
+                      activation='relu',
+                      padding='same',
+                      name='block1_conv1')(img_input)
+    x = layers.MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool')(x)
+
+    # Block 2
+    x = layers.Conv2D(128, (3, 3),
+                      activation='relu',
+                      padding='same',
+                      name='block2_conv1')(x)
+    x = layers.MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool')(x)
+
+    # Block 3
+    x = layers.Conv2D(256, (3, 3),
+                      activation='relu',
+                      padding='same',
+                      name='block3_conv1')(x)
+    x = layers.MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool')(x)
+
+    # Block 4
+    x = layers.Conv2D(512, (3, 3),
+                      activation='relu',
+                      padding='same',
+                      name='block4_conv1')(x)
+    x = layers.MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool')(x)
+
+    # Block 5
+    x = layers.Conv2D(512, (3, 3),
+                      activation='relu',
+                      padding='same',
+                      name='block5_conv1')(x)
+    x = layers.MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool')(x)
+    # Classification block
+    x = layers.Flatten(name='flatten')(x)
+    x = layers.Dense(4096, activation='relu', name='fc1')(x)
+    x = layers.Dense(classes, activation='softmax', name='predictions')(x)
+    # Create model
+    model = training.Model(img_input, x, name='vgg-small')
+    return model
+
+
 def tf_keras_model(name):
     import tensorflow as tf
     # set include_top to False and input_shape explicitly as mobilenet has different default input shape
@@ -86,6 +133,8 @@ def tf_keras_model(name):
         model = tf.keras.applications.InceptionV3(weights=None,
                                                   include_top=True,
                                                   input_shape=(224, 224, 3))
+    elif name == 'vgg-small':
+        model = tf_vgg_small()
     else:
         raise Exception("Invalid tf model name")
     return model, shape

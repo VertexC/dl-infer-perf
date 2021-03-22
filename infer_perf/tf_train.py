@@ -163,21 +163,20 @@ if __name__ == "__main__":
         writer = tf.summary.create_file_writer(logdir)
         tf.summary.trace_on(graph=True, profiler=True)
 
-    
     runner = train_runner(args.model,
-        batch_size=args.batch,
-        xla=args.xla,
-        device=args.device)
+                          batch_size=args.batch,
+                          xla=args.xla,
+                          device=args.device)
 
     throughput = util.simple_bench(runner,
-        data_size=args.size,
-        warmup=1,
-        rounds=5,
-        verbose=True)
+                                   data_size=args.size,
+                                   warmup=1,
+                                   rounds=5,
+                                   verbose=True)
 
     if args.test:
         with writer.as_default():
-            tf.summary.trace_export(
-                name='trace_of_{}_train'.format(args.model),
-                step=0,
-                profiler_outdir=logdir)
+            tf.summary.trace_export(name='trace_of_{}_train'.format(
+                args.model),
+                                    step=0,
+                                    profiler_outdir=logdir)
