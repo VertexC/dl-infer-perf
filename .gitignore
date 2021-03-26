@@ -3,6 +3,7 @@ __pycache__
 # log file
 log.md
 *.log
+log.txt
 
 # task files
 *.json
