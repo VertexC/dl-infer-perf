@@ -18,3 +18,9 @@ log.md
 
 # orion-related
 *orion*
+
+# tensorboard dir
+logs
+
+# experiments
+experiments
