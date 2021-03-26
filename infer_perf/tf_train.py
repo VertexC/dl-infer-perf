@@ -1,59 +1,12 @@
-# Copyright 2019 Uber Technologies, Inc. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 import argparse
 import os
 import numpy as np
+import datetime
 import timeit
 import util
-from datetime import datetime
-
+import datetime
 import tensorflow as tf
-import horovod.tensorflow as hvd
 from tensorflow.keras import applications
-from tensorflow.keras.mixed_precision import experimental as mixed_precision
-# Benchmark settings
-parser = argparse.ArgumentParser(
-    description='TensorFlow Synthetic Benchmark',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
-parser.add_argument('--fp16-allreduce',
-                    action='store_true',
-                    default=False,
-                    help='use fp16 compression during allreduce')
-
-parser.add_argument('--model',
-                    type=str,
-                    default='ResNet50',
-                    help='model to benchmark')
-parser.add_argument('--batch-size',
-                    type=int,
-                    default=128,
-                    help='input batch size')
-
-parser.add_argument(
-    '--num-warmup-batches',
-    type=int,
-    default=10,
-    help='number of warm-up batches that don\'t count towards benchmark')
-parser.add_argument('--num-batches-per-iter',
-                    type=int,
-                    default=10,
-                    help='number of batches per benchmark iteration')
-parser.add_argument('--num-iters',
-                    type=int,
-                    default=100,
-                    help='number of benchmark iterations')
 
 
 def train_runner(model_name, batch_size, device='gpu', xla=True):
@@ -63,22 +16,13 @@ def train_runner(model_name, batch_size, device='gpu', xla=True):
     else:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(False)
-    # Horovod: initialize Horovod.
-    hvd.init()
-    # Horovod: pin GPU to be used to process local rank (one GPU per process)
     if device == "gpu":
         gpus = tf.config.experimental.list_physical_devices('GPU')
-        #for gpu in gpus:
-        #    tf.config.experimental.set_memory_growth(gpu, True)
         if gpus:
-            tf.config.experimental.set_visible_devices(gpus[hvd.local_rank()],
-                                                       'GPU')
+            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
-    policy = mixed_precision.Policy('mixed_float16')
-    mixed_precision.set_policy(policy)
     # Set up standard model.
-    # model = getattr(applications, "ResNet50")(weights=None)
     model, shape = util.tf_keras_model(model_name)
     opt = tf.optimizers.SGD(0.01)
 
@@ -89,49 +33,29 @@ def train_runner(model_name, batch_size, device='gpu', xla=True):
                                dtype=tf.int64)
 
     @tf.function
-    def benchmark_step(first_batch=False):
-        # Horovod: use DistributedGradientTape
+    def benchmark_step():
         with tf.GradientTape() as tape:
             probs = model(data, training=True)
             loss = tf.losses.sparse_categorical_crossentropy(target, probs)
 
-        # Horovod: add Horovod Distributed GradientTape.
-
         gradients = tape.gradient(loss, model.trainable_variables)
         opt.apply_gradients(zip(gradients, model.trainable_variables))
 
-        # Horovod: broadcast initial variable states from rank 0 to all other processes.
-        # This is necessary to ensure consistent initialization of all workers when
-        # training is started with random weights or restored from a checkpoint.
-        #
-        # Note: broadcast should be done after the first gradient step to ensure optimizer
-        # initialization.
-        if first_batch:
-            hvd.broadcast_variables(model.variables, root_rank=0)
-            hvd.broadcast_variables(opt.variables(), root_rank=0)
-
     def log(s, nl=True):
-        if hvd.rank() != 0:
-            return
         print(s, end='\n' if nl else '')
 
     log('Model: %s' % model_name)
     log('Batch size: %d' % batch_size)
-    log('Number of %ss: %d' % (device, hvd.size()))
 
     class runner_wrapper:
         def __init__(self, benchmark_step, batch_size):
-            self.first_batch = False
             self.step = benchmark_step
             self.batch_size = batch_size
 
         def __call__(self, data_size):
-            if self.first_batch:
-                self.first_batch = False
-                self.step(first_batch=True)
-            else:
-                for _ in range(data_size // self.batch_size):
-                    self.step(first_batch=False)
+            print(data_size, self.batch_size)
+            for _ in range(data_size // self.batch_size):
+                self.step()
 
     return runner_wrapper(benchmark_step, batch_size)
 
@@ -148,35 +72,42 @@ if __name__ == "__main__":
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
     parser.add_argument("--size", type=int, default=256, help='data size')
-    parser.add_argument("--test",
+    parser.add_argument("--visual",
                         action='store_true',
-                        help='Store temporary result')
+                        help='Output tensorboard log for visualization')
 
     args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    if args.test:
-        # Set up logging for tensorboard
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        logdir = 'logs/func/{}-{}-{}'.format(stamp, args.model, 'train')
-        writer = tf.summary.create_file_writer(logdir)
-        tf.summary.trace_on(graph=True, profiler=True)
+    if args.visual:
+        model, shape = util.tf_keras_model(args.model)
+        log_dir = "logs/fit/{}/{}".format(
+            args.model,
+            datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir,
+                                                              histogram_freq=1)
+        x_train = tf.random.uniform([args.batch, 224, 224, 3])
+        y_train = tf.random.uniform([args.batch, 1],
+                                    minval=0,
+                                    maxval=999,
+                                    dtype=tf.int64)
+        model.compile(optimizer='adam',
+                      loss='sparse_categorical_crossentropy',
+                      metrics=['accuracy'])
 
-    runner = train_runner(args.model,
-                          batch_size=args.batch,
-                          xla=args.xla,
-                          device=args.device)
+        model.fit(x=x_train,
+                  y=y_train,
+                  epochs=1,
+                  callbacks=[tensorboard_callback])
+    else:
+        runner = train_runner(args.model,
+                              batch_size=args.batch,
+                              xla=args.xla,
+                              device=args.device)
 
-    throughput = util.simple_bench(runner,
-                                   data_size=args.size,
-                                   warmup=1,
-                                   rounds=5,
-                                   verbose=True)
-
-    if args.test:
-        with writer.as_default():
-            tf.summary.trace_export(name='trace_of_{}_train'.format(
-                args.model),
-                                    step=0,
-                                    profiler_outdir=logdir)
+        throughput = util.simple_bench(runner,
+                                       data_size=args.size,
+                                       warmup=1,
+                                       rounds=5,
+                                       verbose=True)

@@ -1,5 +1,6 @@
 import time
 import os, argparse
+import datetime
 
 import tensorflow as tf
 import numpy as np
@@ -76,21 +77,32 @@ if __name__ == "__main__":
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
     parser.add_argument("--size", type=int, default=256, help='data size')
-    parser.add_argument("--test",
+    parser.add_argument("--visual",
                         action='store_true',
-                        help='Store temporary result')
+                        help='Output tensorboard log for visualization')
 
     args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-    runner = xla(args.model,
-                 batch_size=args.batch,
-                 xla=args.xla,
-                 device=args.device,
-                 test=args.test)
-    throughput = util.simple_bench(runner,
-                                   data_size=args.size,
-                                   warmup=1,
-                                   rounds=5,
-                                   verbose=True)
-    print(throughput)
+
+    if args.visual:
+        model, shape = util.tf_keras_model(args.model)
+        log_dir = "logs/infer/{}/{}".format(
+            args.model,
+            datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir,
+                                                              histogram_freq=1)
+        x = np.random.rand(args.batch, *shape).astype(np.float32)
+        model.predict(x, callbacks=[tensorboard_callback])
+    else:
+        runner = xla(args.model,
+                     batch_size=args.batch,
+                     xla=args.xla,
+                     device=args.device,
+                     test=args.test)
+        throughput = util.simple_bench(runner,
+                                       data_size=args.size,
+                                       warmup=1,
+                                       rounds=5,
+                                       verbose=True)
+        print(throughput)
