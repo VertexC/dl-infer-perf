@@ -1,0 +1,16 @@
+syntax = "proto3";
+
+package benchmark;
+
+service UpdateBenchmarkService {
+    rpc UpdateBenchmark(BenchmarkByteUpdateRequest) returns (BenchmarkByteUpdateReply) {}
+}
+
+message BenchmarkByteUpdateRequest {
+    bytes data=1;
+    string group=2;
+}
+
+message BenchmarkByteUpdateReply {
+    string message=1;
+}

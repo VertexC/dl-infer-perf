@@ -1,0 +1,1 @@
+python -m grpc_tools.protoc -I ./proto --python_out=pkg --grpc_python_out=pkg ./proto/benchmark/benchmark.proto
