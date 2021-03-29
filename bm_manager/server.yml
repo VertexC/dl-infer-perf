@@ -1,0 +1,18 @@
+db_url: "db/data.csv"
+fields:
+  - key: "optimizer"
+    default: ""
+  - key: "fe"
+    default: ""
+  - key: "model"
+    default: ""
+  - key: "batch_size"
+    default: -1
+  - key: "device"
+    default: ""
+  - key: "tps"
+    default: 0
+  - key: "tps-svd"
+    default: 0
+  - key: "group"
+    default: "test"
