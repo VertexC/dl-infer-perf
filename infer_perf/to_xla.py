@@ -14,7 +14,7 @@ if gpus:
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
 
-def xla_runner(fe, model_name, batch_size, device, xla, test=False):
+def xla_runner(fe, model_name, batch_size, device, xla):
     if fe != 'tf':
         return None
     if xla:
@@ -61,8 +61,8 @@ def xla_runner(fe, model_name, batch_size, device, xla, test=False):
     return runner
 
 
-def xla(model_name, batch_size=1, device='gpu', xla=True, test=False):
-    return xla_runner('tf', model_name, batch_size, device, xla, test=test)
+def xla(model_name, batch_size=1, device='gpu', xla=True):
+    return xla_runner('tf', model_name, batch_size, device, xla)
 
 
 if __name__ == "__main__":
@@ -98,8 +98,7 @@ if __name__ == "__main__":
         runner = xla(args.model,
                      batch_size=args.batch,
                      xla=args.xla,
-                     device=args.device,
-                     test=args.test)
+                     device=args.device)
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
                                        warmup=1,
