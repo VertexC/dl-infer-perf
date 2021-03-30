@@ -53,7 +53,6 @@ def train_runner(model_name, batch_size, device='gpu', xla=True):
             self.batch_size = batch_size
 
         def __call__(self, data_size):
-            print(data_size, self.batch_size)
             for _ in range(data_size // self.batch_size):
                 self.step()
 
