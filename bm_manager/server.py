@@ -10,6 +10,7 @@ import pandas as pd
 import proto.pkg.benchmark.benchmark_pb2_grpc as bmrpc
 import proto.pkg.benchmark.benchmark_pb2 as bmpb
 
+
 def update_db():
     pass
 
@@ -17,10 +18,12 @@ def update_db():
 def mkdir_p(d):
     try:
         os.makedirs(d)
-    except OSError as exc: # Python >2.5
+    except OSError as exc:    # Python >2.5
         if exc.errno == errno.EEXIST and os.path.isdir(d):
             pass
-        else: raise
+        else:
+            raise
+
 
 '''
 df: pd.dataframe
@@ -28,11 +31,13 @@ fields: {column_name: value}
 
 return: the index of df satisfy match fields, -1 if not found
 '''
+
+
 def query(df, fields):
     if len(fields) == 0:
         return df.index
     else:
-        k,v = fields[0]
+        k, v = fields[0]
         df = df[df[k] == v]
         if len(df) == 0:
             return None
@@ -44,7 +49,7 @@ class UpdateBenchmarkService(bmrpc.UpdateBenchmarkService):
     def __init__(self, db):
         super(UpdateBenchmarkService, self).__init__()
         self.db = db
-        
+
     def UpdateBenchmark(self, request, context):
         print('Receive UpdateBenchmark request')
         df = pickle.loads(request.data)
@@ -55,6 +60,7 @@ class UpdateBenchmarkService(bmrpc.UpdateBenchmarkService):
         else:
             message = 'Update Success'
         return bmpb.BenchmarkByteUpdateReply(message=message)
+
 
 class BenchmarkDB:
     def __init__(self, url, key_f, val_f):
@@ -70,7 +76,7 @@ class BenchmarkDB:
         if os.path.isfile(url):
             df = pd.read_csv(url)
         else:
-            data = {k:[None] for k in fields}
+            data = {k: [None] for k in fields}
             df = pd.DataFrame.from_dict(data)
             mkdir_p(os.path.dirname(url))
             df.to_csv(url, index=False)
@@ -78,12 +84,13 @@ class BenchmarkDB:
 
     def _write_back(self):
         self._df.to_csv(self.url)
-    
+
     def update(self, df):
         print('Checking format...')
         headers = df.head()
         if set(headers) != set(self.key_f | self.val_f):
-            return 'headers not match, expect {}, got {}'.format(self.key_f | self.val_f, headers)
+            return 'headers not match, expect {}, got {}'.format(
+                self.key_f | self.val_f, headers)
         self._lock.acquire()
         to_drop = []
         for _, r in df.iterrows():
@@ -98,6 +105,7 @@ class BenchmarkDB:
         print('Data updated:\n {}'.format(self._df))
         return None
 
+
 def lunch_server(config_file):
     with open(config_file) as f:
         content = yaml.load(f, Loader=yaml.FullLoader)
@@ -109,7 +117,8 @@ def lunch_server(config_file):
     bm_db = BenchmarkDB(url, key_f, val_f)
 
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
-    bmrpc.add_UpdateBenchmarkServiceServicer_to_server(UpdateBenchmarkService(bm_db), server)
+    bmrpc.add_UpdateBenchmarkServiceServicer_to_server(
+        UpdateBenchmarkService(bm_db), server)
     server.add_insecure_port('[::]:50051')
     server.start()
     server.wait_for_termination()
