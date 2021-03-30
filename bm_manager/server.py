@@ -2,6 +2,7 @@ import yaml
 import os
 import pickle
 import threading
+import errno
 
 from concurrent import futures
 import grpc
@@ -69,15 +70,17 @@ class BenchmarkDB:
         if os.path.isfile(url):
             df = pd.read_csv(url)
         else:
-            data = {k:None for k in fields}
+            data = {k:[None] for k in fields}
             df = pd.DataFrame.from_dict(data)
             mkdir_p(os.path.dirname(url))
             df.to_csv(url, index=False)
         self._df = df
+
+    def _write_back(self):
+        self._df.to_csv(self.url)
     
     def update(self, df):
         print('Checking format...')
-        import pdb; pdb.set_trace()
         headers = df.head()
         if set(headers) != set(self.key_f | self.val_f):
             return 'headers not match, expect {}, got {}'.format(self.key_f | self.val_f, headers)
@@ -90,6 +93,7 @@ class BenchmarkDB:
                 to_drop += index.tolist()
         self._df = self._df.drop(to_drop)
         self._df = pd.concat([self._df, df], ignore_index=True)
+        self._write_back()
         self._lock.release()
         print('Data updated:\n {}'.format(self._df))
         return None
