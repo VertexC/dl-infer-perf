@@ -123,11 +123,13 @@ def scan_parameters(dirs):
     return fes, models, optimizers
 
 
-def visualize_group(dirs, out, batch_size):
+def visualize_group(dirs, out, model_filter, batch_size):
     fes, models, optimizers = scan_parameters(dirs)
     fig = plt.figure(figsize=(25, 25))
     plt.suptitle(' Vs '.join([d for d in dirs]), fontsize=40)
     fig.tight_layout()
+    if model_filter != '':
+        models = model_filter.split(',')
     plotter = do_subplot(len(models), len(dirs))
     for i, d in enumerate(dirs):
         visualize(fes, models, optimizers, plotter, i, d, batch_size)
@@ -145,5 +147,6 @@ if __name__ == "__main__":
                         help='dirs of benchmark result')
     parser.add_argument('out', type=str, help='output result image')
     parser.add_argument("--batch", type=int, default=64)
+    parser.add_argument('--model', type=str, default='')
     args = parser.parse_args()
-    visualize_group(args.dirs, args.out, args.batch)
+    visualize_group(args.dirs, args.out, args.model, args.batch)
