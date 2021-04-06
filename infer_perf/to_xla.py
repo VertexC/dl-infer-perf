@@ -14,9 +14,14 @@ if gpus:
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
 
-def xla_runner(fe, model_name, batch_size, device, xla):
+def xla_runner(fe, model_name, batch_size, device, xla, threads=0):
     if fe != 'tf':
         return None
+    tf.config.threading.set_inter_op_parallelism_threads(threads)
+    tf.config.threading.set_intra_op_parallelism_threads(threads)
+    print('TF inter thread: {}, intra thread: {}'.format(
+        tf.config.threading.get_inter_op_parallelism_threads(),
+        tf.config.threading.get_intra_op_parallelism_threads()))
     if xla:
         tf.keras.backend.clear_session()
         tf.config.optimizer.set_jit(True)
@@ -61,8 +66,13 @@ def xla_runner(fe, model_name, batch_size, device, xla):
     return runner
 
 
-def xla(model_name, batch_size=1, device='gpu', xla=True):
-    return xla_runner('tf', model_name, batch_size, device, xla)
+def xla(model_name, batch_size=1, device='gpu', xla=True, threads=0):
+    return xla_runner('tf',
+                      model_name,
+                      batch_size,
+                      device,
+                      xla,
+                      threads=threads)
 
 
 if __name__ == "__main__":
@@ -80,6 +90,10 @@ if __name__ == "__main__":
     parser.add_argument("--visual",
                         action='store_true',
                         help='Output tensorboard log for visualization')
+    parser.add_argument("--threads",
+                        type=int,
+                        default=1,
+                        help='inter_op_parallelism_threads')
 
     args = parser.parse_args()
 
@@ -98,10 +112,11 @@ if __name__ == "__main__":
         runner = xla(args.model,
                      batch_size=args.batch,
                      xla=args.xla,
-                     device=args.device)
+                     device=args.device,
+                     threads=args.threads)
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
-                                       warmup=1,
-                                       rounds=5,
+                                       warmup=3,
+                                       rounds=10,
                                        verbose=True)
         print(throughput)
