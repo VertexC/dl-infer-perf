@@ -25,3 +25,12 @@ logs
 
 # experiments
 experiments
+
+# env
+*env
+
+# perf-result
+perf_result
+
+# tensorrt saved results
+tf2trt_saved

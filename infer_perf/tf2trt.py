@@ -8,15 +8,17 @@ import time
 
 import util
 
+save_dir = 'tf2trt_saved'
+
 
 def tf2trt_runner(model_name, batch_size=1):
     # tvm cuda will have issue with mobilenet
     model, shape = util.tf_keras_model(model_name)
-    model_path = model_name + '_saved_model'
+    model_path = os.path.join(save_dir, model_name + '_saved_model')
     if not os.path.isdir(model_path):
         model.save(model_path)
 
-    trt_path = model_path + '_TFTRT_FP32'
+    trt_path = os.path.join(save_dir, model_name + '_TFTRT_FP32_saved_model')
 
     # if not os.path.isdir(trt_path):
     # always regenerate model to avoid incompatibility between different onnx/trt version
