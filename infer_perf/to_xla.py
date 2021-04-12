@@ -14,11 +14,10 @@ if gpus:
     tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
 
-def xla_runner(fe, model_name, batch_size, device, xla, threads=0):
+def xla_runner(fe, model_name, batch_size, device, xla):
     if fe != 'tf':
         return None
-    tf.config.threading.set_inter_op_parallelism_threads(threads)
-    tf.config.threading.set_intra_op_parallelism_threads(threads)
+   
     print('TF inter thread: {}, intra thread: {}'.format(
         tf.config.threading.get_inter_op_parallelism_threads(),
         tf.config.threading.get_intra_op_parallelism_threads()))
@@ -66,13 +65,12 @@ def xla_runner(fe, model_name, batch_size, device, xla, threads=0):
     return runner
 
 
-def xla(model_name, batch_size=1, device='gpu', xla=True, threads=0):
+def xla(model_name, batch_size=1, device='gpu', xla=True):
     return xla_runner('tf',
                       model_name,
                       batch_size,
                       device,
-                      xla,
-                      threads=threads)
+                      xla)
 
 
 if __name__ == "__main__":
@@ -88,32 +86,66 @@ if __name__ == "__main__":
     parser.add_argument("--batch", type=int, default=1, help='batch size')
     parser.add_argument("--size", type=int, default=256, help='data size')
     parser.add_argument("--visual",
-                        action='store_true',
+                        type=str,
+                        default="",
                         help='Output tensorboard log for visualization')
+    parser.add_argument("--profile",
+                        type=str,
+                        default="",
+                        help='Add profile logs')
     parser.add_argument("--threads",
                         type=int,
-                        default=1,
+                        default=0,
                         help='inter_op_parallelism_threads')
 
     args = parser.parse_args()
 
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
-    if args.visual:
+    log_dir = "logs/infer/{}".format(
+            args.model)
+
+    tf.config.threading.set_inter_op_parallelism_threads(args.threads)
+    tf.config.threading.set_intra_op_parallelism_threads(args.threads)
+
+    if args.visual != "":
         model, shape = util.tf_keras_model(args.model)
-        log_dir = "logs/infer/{}/{}".format(
-            args.model,
-            datetime.datetime.now().strftime("%Y%m%d-%H%M%S"))
+        
+        log_dir = os.path.join(log_dir, args.visual)
         tensorboard_callback = tf.keras.callbacks.TensorBoard(log_dir=log_dir,
                                                               histogram_freq=1)
         x = np.random.rand(args.batch, *shape).astype(np.float32)
         model.predict(x, callbacks=[tensorboard_callback])
+
+    
+    if args.profile != "":
+        # from tensorflow_core.python.eager import profiler
+
+        log_dir = os.path.join(log_dir, args.profile)
+        # profiler = tf.profiler.experimental.Profile(log_dir)
+        runner = xla(args.model,
+                    batch_size=args.batch,
+                    xla=args.xla,
+                    device=args.device)
+
+        util.simple_bench(runner,
+                        data_size=args.size,
+                        warmup=10,
+                        rounds=1,
+                        verbose=True)
+        
+        tf.profiler.experimental.start(log_dir)
+        throughput = util.simple_bench(runner,
+                                       data_size=args.size,
+                                       warmup=0,
+                                       rounds=1,
+                                       verbose=True)
+        tf.profiler.experimental.stop()
     else:
         runner = xla(args.model,
                      batch_size=args.batch,
                      xla=args.xla,
-                     device=args.device,
-                     threads=args.threads)
+                     device=args.device)
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
                                        warmup=3,

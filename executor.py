@@ -2,10 +2,13 @@ import time
 import os
 import json
 import gc
-import util
 import multiprocessing as mp
 import pandas as pd
 import collections
+
+import infer_perf
+import infer_perf.util
+import bm_manager.client
 
 TAG = '[BenchmarkExectutor]'
 
@@ -17,7 +20,7 @@ class Benchmark:
         self.rounds = rounds
 
     def execute(self, runner):
-        metric = util.simple_bench(runner,
+        metric = infer_perf.util.simple_bench(runner,
                                    data_size=self.data_size,
                                    warmup=self.warmup,
                                    rounds=self.rounds,
@@ -41,7 +44,7 @@ class Task:
     def get_runner(self):
         if self.optimizer == 'xla':
             if self.fe == 'tf-train':
-                from tf_train import train_runner
+                from infer_perf.tf_train import train_runner
                 return train_runner(self.model,
                                     self.batch_size,
                                     self.device,
@@ -54,26 +57,26 @@ class Task:
                                   self.device,
                                   xla=True)
         elif self.optimizer == 'tvm':
-            from to_tvm import tvm_runner
+            from infer_perf.to_tvm import tvm_runner
             return tvm_runner(self.fe, self.model, self.batch_size,
                               self.device)
         elif self.optimizer == 'trt':
-            from to_trt import trt_runner
+            from infer_perf.to_trt import trt_runner
             return trt_runner(self.fe, self.model, self.batch_size,
                               self.device)
         elif self.optimizer == 'baseline':
             if self.fe == "torch":
-                from to_torch import torch_runner
+                from infer_perf.to_torch import torch_runner
                 return torch_runner(self.model, self.batch_size, self.device)
             elif self.fe == "tf":
-                from to_xla import xla_runner
+                from infer_perf.to_xla import xla_runner
                 return xla_runner(self.fe,
                                   self.model,
                                   self.batch_size,
                                   self.device,
                                   xla=False)
             elif self.fe == 'tf-train':
-                from tf_train import train_runner
+                from infer_perf.tf_train import train_runner
                 return train_runner(self.model,
                                     self.batch_size,
                                     self.device,
@@ -136,23 +139,7 @@ def execute_worker(resultq, benchmark, task):
     resultq.put(task_info)
 
 
-def to_report(resultq, file):
-    result = collections.defaultdict(list)
-    while not resultq.empty():
-        for k, v in resultq.get().items():
-            result[k].append(v)
-    if not os.path.isfile(file):
-        pd.DataFrame.from_dict(data=result).to_csv(file,
-                                                   index=False,
-                                                   header=True)
-    else:
-        pd.DataFrame.from_dict(data=result).to_csv(file,
-                                                   index=False,
-                                                   header=False,
-                                                   mode='a')
-
-
-def execute_manager(config, file, warmup, rounds, data_size, batch):
+def execute_manager(config, file, warmup, rounds, data_size, batch, server, group):
     msg, valid = validate_config(config)
     if not valid:
         raise Exception("Invlida benchmark config : {}".format(msg))
@@ -170,14 +157,28 @@ def execute_manager(config, file, warmup, rounds, data_size, batch):
             p.join()
         except Exception as e:
             print("Got exception when run {}:{}".format(task, e))
-    to_report(resultq, file)
+
+    result = collections.defaultdict(list)
+    while not resultq.empty():
+        for k, v in resultq.get().items():
+            result[k].append(v)
+    result_df = pd.DataFrame.from_dict(data=result)
+    if file != "":
+        result_df.to_csv(file, index=False, header=True)
+
+    if server != "":
+        bm_manager.client.update_df(result_df, server, group)
+
 
 
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="benchmark task runner")
     parser.add_argument("task_file", type=str, help="json file of tasks")
-    parser.add_argument("report_file", type=str, help="output file of results")
+    parser.add_argument("-f",
+                        "--report", 
+                        type=str, 
+                        help="output file of results")
     parser.add_argument("-w",
                         "--warmup",
                         default=5,
@@ -199,6 +200,17 @@ if __name__ == "__main__":
         default=-1,
         type=int,
         help="specific batch size to run (-1 for without specification)")
+    parser.add_argument(
+        "--server",
+        default="",
+        type=str,
+        help="url of bm server")
+    parser.add_argument(
+        "--group",
+        default="test",
+        type=str,
+        help="group name of benchmark"
+    )
 
     args = parser.parse_args()
 
@@ -210,5 +222,5 @@ if __name__ == "__main__":
     except RuntimeError:
         pass
 
-    execute_manager(config, args.report_file, args.warmup, args.rounds,
-                    args.size, args.batch)
+    execute_manager(config, args.report, args.warmup, args.rounds,
+                    args.size, args.batch, args.server, args.group)

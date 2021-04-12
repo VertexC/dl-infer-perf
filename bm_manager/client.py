@@ -6,7 +6,7 @@ import proto.pkg.benchmark.benchmark_pb2 as bmpb
 import proto.pkg.benchmark.benchmark_pb2_grpc as bmrpc
 
 
-def update_request(df, server, group):
+def update_df(df, server, group):
     print('Uploading df as group <{}>\n : {}'.format(group, df))
     df['group'] = pd.Series([group] * len(df), index=df.index)
     df_bytes = pickle.dumps(df)
@@ -19,8 +19,8 @@ def update_request(df, server, group):
 
 def update_file(file, server, group):
     print('Try to update benchmark {} to server {}'.format(file, server))
-    df = pd.read_csv(file)
-    update_request(df, server, group)
+    df = pd.read_csv(file, index_col=False)
+    update_df(df, server, group)
 
 
 if __name__ == '__main__':
