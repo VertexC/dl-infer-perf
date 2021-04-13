@@ -59,9 +59,9 @@ def xla_runner(fe, model_name, batch_size, device, xla):
                     ret = self.graph_model(self.data)
                     ret_np = ret.eval()
 
-    graf_model = tf.function(lambda x: model(x))
+    graph_mode = tf.function(lambda x: model(x))
 
-    runner = runner_wrapper(graf_model, False, batch_size=batch_size)
+    runner = runner_wrapper(graph_mode, False, batch_size=batch_size)
     return runner
 
 
