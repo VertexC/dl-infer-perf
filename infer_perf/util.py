@@ -3,27 +3,44 @@ import os
 import numpy as np
 
 
-def simple_bench(runner, data_size=256, warmup=0, rounds=1, verbose=False):
+def simple_bench(runner, data_size=256, warmup=0, rounds=1, sleep=0, verbose=False):
     for i in range(warmup):
         tic = time.time()
         runner(data_size)
         toc = time.time()
-        throughput = data_size / (toc - tic)
+        duration = toc - tic
+        throughput = data_size / duration
         if verbose:
             print('warmup {}: throughput {} imgs/s'.format(i, throughput))
+            print('warmup {}: time {} us'.format(i, duration*1000000))
+        if sleep > 0:
+            print('sleeping :{}s'.format(sleep))
+            time.sleep(sleep)
     throughputs = []
+    durations = []
     for i in range(rounds):
         tic = time.time()
         runner(data_size)
         toc = time.time()
-        throughput = data_size / (toc - tic)
+        duration = toc - tic
+        throughput = data_size / duration
         throughputs.append(throughput)
+        durations.append(duration)
         if verbose:
             print('round {}: throughput {} imgs/s'.format(i, throughput))
-    avg = np.mean(throughputs)
-    std = np.std(throughputs)
-    print('throughput: {}+/-{}'.format(avg, std))
-    return avg
+            print('round {}: time {} us'.format(i, duration*1000000))
+        if sleep > 0:
+            print('sleeping :{}s'.format(sleep))
+            time.sleep(sleep)
+    print(throughputs)
+    print(durations)
+    throughput_avg = np.mean(throughputs)
+    throughput_std = np.std(throughputs)
+    print('throughput: {}+/-{}'.format(throughput_avg, throughput_std))
+    duration_avg = np.mean(durations)
+    duration_std = np.std(durations)
+    print('durations: {}+/-{}'.format(duration_avg, duration_std))
+    return throughput_avg
 
 
 def memory_usage():
