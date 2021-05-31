@@ -8,6 +8,19 @@ import datetime
 import tensorflow as tf
 from tensorflow.keras import applications
 
+# print("GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
+
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+
+# # gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+# # for device in gpu_devices:
+# #     tf.config.experimental.set_memory_growth(device, False)
+
+# if gpus:
+#     tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
+
+np.random.seed(1)
+tf.random.set_seed(1)
 
 def train_runner(model_name, batch_size, device='gpu', xla=True):
     if xla:
@@ -19,7 +32,7 @@ def train_runner(model_name, batch_size, device='gpu', xla=True):
     if device == "gpu":
         gpus = tf.config.experimental.list_physical_devices('GPU')
         if gpus:
-            tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
+            tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = "-1"
     # Set up standard model.
@@ -44,9 +57,6 @@ def train_runner(model_name, batch_size, device='gpu', xla=True):
     def log(s, nl=True):
         print(s, end='\n' if nl else '')
 
-    log('Model: %s' % model_name)
-    log('Batch size: %d' % batch_size)
-
     class runner_wrapper:
         def __init__(self, benchmark_step, batch_size):
             self.step = benchmark_step
@@ -70,7 +80,7 @@ if __name__ == "__main__":
                         default='gpu',
                         help='device to run on')
     parser.add_argument("--batch", type=int, default=1, help='batch size')
-    parser.add_argument("--size", type=int, default=256, help='data size')
+    parser.add_argument("--size", type=int, default=1024, help='data size')
     parser.add_argument("--visual",
                         action='store_true',
                         help='Output tensorboard log for visualization')
@@ -107,6 +117,6 @@ if __name__ == "__main__":
 
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
-                                       warmup=1,
+                                       warmup=3,
                                        rounds=5,
                                        verbose=True)

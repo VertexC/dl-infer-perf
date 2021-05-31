@@ -1,6 +1,7 @@
 import time
 import os, argparse
 import datetime
+from datetime import datetime
 
 import tensorflow as tf
 import numpy as np
@@ -10,9 +11,13 @@ import util
 print("GPUs Available: ", tf.config.experimental.list_physical_devices('GPU'))
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
-if gpus:
-    tf.config.experimental.set_visible_devices(gpus[0], 'GPU')
 
+# gpu_devices = tf.config.experimental.list_physical_devices('GPU')
+# for device in gpu_devices:
+#     tf.config.experimental.set_memory_growth(device, False)
+
+if gpus:
+    tf.config.experimental.set_visible_devices(gpus[1], 'GPU')
 
 def xla_runner(fe, model_name, batch_size, device, xla):
     if fe != 'tf':
@@ -49,7 +54,15 @@ def xla_runner(fe, model_name, batch_size, device, xla):
                 self.session_runner(data_size)
             else:
                 for _ in range(data_size // self.batch_size):
+                    # import pdb; pdb.set_trace()
+                    print("graph start", datetime.now().strftime("%m/%d/%Y, %H:%M:%S.%f"))
+                    start = time.time()
                     ret = self.graph_model(self.data)
+                    end = time.time()
+                    print("graph end", datetime.now().strftime("%m/%d/%Y, %H:%M:%S.%f"))
+                    print("graph_model time: %s us" % ((end - start)*10**6))
+                    # print(ret)
+                    ret.numpy()
 
         # explicitly eval is only needed when eager_execution is off
         def session_runner(self, data_size):
@@ -89,6 +102,16 @@ if __name__ == "__main__":
                         type=str,
                         default="",
                         help='Output tensorboard log for visualization')
+    parser.add_argument("-w",
+                        "--warmup",
+                        default=3,
+                        type=int,
+                        help="warm up rounds")
+    parser.add_argument("-r",
+                        "--rounds",
+                        default=30,
+                        type=int,
+                        help="rounds to execute runner")
     parser.add_argument("--profile",
                         type=str,
                         default="",
@@ -97,10 +120,18 @@ if __name__ == "__main__":
                         type=int,
                         default=0,
                         help='inter_op_parallelism_threads')
+    parser.add_argument("--log",
+                        type=str,
+                        default='3',
+                        help='TF_CPP_MIN_VLOG_LEVEL')
+    parser.add_argument("--sleep",
+                        type=int,
+                        default=0,
+                        help='time to sleep between rounds')
 
     args = parser.parse_args()
 
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    # os.environ['TF_CPP_MIN_VLOG_LEVEL'] = args.log
 
     log_dir = "logs/infer/{}".format(
             args.model)
@@ -130,15 +161,15 @@ if __name__ == "__main__":
 
         util.simple_bench(runner,
                         data_size=args.size,
-                        warmup=10,
-                        rounds=1,
+                        warmup=args.warmup,
+                        rounds=args.rounds,
                         verbose=True)
         
         tf.profiler.experimental.start(log_dir)
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
-                                       warmup=0,
-                                       rounds=1,
+                                       warmup=args.warmup,
+                                       rounds=args.rounds,
                                        verbose=True)
         tf.profiler.experimental.stop()
     else:
@@ -148,7 +179,8 @@ if __name__ == "__main__":
                      device=args.device)
         throughput = util.simple_bench(runner,
                                        data_size=args.size,
-                                       warmup=3,
-                                       rounds=10,
-                                       verbose=True)
+                                       warmup=args.warmup,
+                                       rounds=args.rounds,
+                                       verbose=True,
+                                       sleep=args.sleep)
         print(throughput)
