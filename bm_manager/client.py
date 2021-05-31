@@ -27,11 +27,11 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description='update file to server')
     parser.add_argument("file", type=str, help="json file of tasks")
-    parser.add_argument('server',
+    parser.add_argument('--server',
                         type=str,
                         default='localhost:50051',
                         help='server url')
-    parser.add_argument('group',
+    parser.add_argument('--group',
                         type=str,
                         default='test',
                         help='grou name of benchmark')

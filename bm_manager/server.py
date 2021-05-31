@@ -11,10 +11,6 @@ import proto.pkg.benchmark.benchmark_pb2_grpc as bmrpc
 import proto.pkg.benchmark.benchmark_pb2 as bmpb
 
 
-def update_db():
-    pass
-
-
 def mkdir_p(d):
     try:
         os.makedirs(d)
@@ -23,14 +19,6 @@ def mkdir_p(d):
             pass
         else:
             raise
-
-
-'''
-df: pd.dataframe
-fields: {column_name: value}
-
-return: the index of df satisfy match fields, -1 if not found
-'''
 
 
 def query(df, fields):
@@ -52,6 +40,7 @@ class UpdateBenchmarkService(bmrpc.UpdateBenchmarkService):
 
     def UpdateBenchmark(self, request, context):
         print('Receive UpdateBenchmark request')
+        print(request)
         df = pickle.loads(request.data)
         print('Server get df\n:{}'.format(df))
         msg = self.db.update(df)
@@ -128,11 +117,6 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description="benchmark server")
     parser.add_argument("config", type=str, help="server yaml config file")
-    parser.add_argument("-t",
-                        "--test",
-                        default=256,
-                        type=int,
-                        help="size of test data size")
     args = parser.parse_args()
 
     lunch_server(args.config)
