@@ -59,7 +59,7 @@ python executor torch2tvm.json  --report result.csv
 usage: python3 executor <job.json> --server <bm_server>
 ```
 
-[<img src="doc/framework.png" alt="framework" width="500px"/>]
+<img src="doc/framework.png" alt="framework" width="1200px"/>
 
 ## Code Format
 yapf infer_perf/*.py -i --style yapf.style 
