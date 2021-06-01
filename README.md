@@ -15,7 +15,7 @@ docker: nvcr.io/nvidia/tensorrt:19.09-py3
 
 ## Candidates
 model
-- vgg
+- vgg16
 - mobilenet
 - resnet50
 - inception
